@@ -28,7 +28,8 @@ jobs:
           tar -C "$HOME" -xzf /tmp/go.tar.gz
           cd tools/mkdmg && "$HOME/go/bin/go" build -o "$HOME/mkdmg" .
       - name: Create DMG
-        run: "$HOME/mkdmg" -app "dist/mac/Twig.app" -out "dist/Twig-x64.dmg" -volume Twig
+        run: |
+          "$HOME/mkdmg" -app "dist/mac/Twig.app" -out "dist/Twig-x64.dmg" -volume Twig
       - uses: actions/upload-artifact@v3
         with:
           name: Twig-macOS-x64-dmg
@@ -57,7 +58,8 @@ jobs:
           tar -C "$HOME" -xzf /tmp/go.tar.gz
           cd tools/mkdmg && "$HOME/go/bin/go" build -o "$HOME/mkdmg" .
       - name: Create DMG
-        run: "$HOME/mkdmg" -app "dist/mac-arm64/Twig.app" -out "dist/Twig-arm64.dmg" -volume Twig
+        run: |
+          "$HOME/mkdmg" -app "dist/mac-arm64/Twig.app" -out "dist/Twig-arm64.dmg" -volume Twig
       - uses: actions/upload-artifact@v3
         with:
           name: Twig-macOS-arm64-dmg
