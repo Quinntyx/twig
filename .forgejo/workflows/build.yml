@@ -20,11 +20,19 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - run: npx --yes electron-builder --mac zip --x64 --publish never
+      - run: npx --yes electron-builder --mac dir --x64 --publish never
+      - name: Build DMG helper
+        run: |
+          GO_VERSION=$(curl -fsSL 'https://go.dev/VERSION?m=text' | head -n1)
+          curl -fsSL "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tar.gz
+          tar -C "$HOME" -xzf /tmp/go.tar.gz
+          cd tools/mkdmg && "$HOME/go/bin/go" build -o "$HOME/mkdmg" .
+      - name: Create DMG
+        run: "$HOME/mkdmg" -app "dist/mac/Twig.app" -out "dist/Twig-x64.dmg" -volume Twig
       - uses: actions/upload-artifact@v3
         with:
-          name: Twig-macOS-x64
-          path: dist/Twig-*-x64-mac.zip
+          name: Twig-macOS-x64-dmg
+          path: dist/Twig-x64.dmg
           if-no-files-found: error
           retention-days: 30
 
@@ -41,11 +49,19 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - run: npx --yes electron-builder --mac zip --arm64 --publish never
+      - run: npx --yes electron-builder --mac dir --arm64 --publish never
+      - name: Build DMG helper
+        run: |
+          GO_VERSION=$(curl -fsSL 'https://go.dev/VERSION?m=text' | head -n1)
+          curl -fsSL "https://go.dev/dl/${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tar.gz
+          tar -C "$HOME" -xzf /tmp/go.tar.gz
+          cd tools/mkdmg && "$HOME/go/bin/go" build -o "$HOME/mkdmg" .
+      - name: Create DMG
+        run: "$HOME/mkdmg" -app "dist/mac-arm64/Twig.app" -out "dist/Twig-arm64.dmg" -volume Twig
       - uses: actions/upload-artifact@v3
         with:
-          name: Twig-macOS-arm64
-          path: dist/Twig-*-arm64-mac.zip
+          name: Twig-macOS-arm64-dmg
+          path: dist/Twig-arm64.dmg
           if-no-files-found: error
           retention-days: 30
 

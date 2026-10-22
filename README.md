@@ -88,6 +88,26 @@ keyboard navigation works while the canvas is not focused. In Electron, file
 operations go through IPC; in the browser preview they degrade to an `<input>`
 picker and a download.
 
+## Building installers
+
+`bun run dist` builds a DMG on macOS. On Linux, electron-builder cannot create
+a DMG (`hdiutil`/`sips` are macOS-only), so CI uses the small pure-Go helper in
+`tools/mkdmg` to wrap the packaged `Twig.app` in an HFS+ disk image with an
+`Applications` drag-link.
+
+The Forgejo build workflow produces:
+
+- `Twig-x64.dmg` and `Twig-arm64.dmg` (drag `Twig` onto `Applications`)
+- `Twig-<version>-x86_64.AppImage`
+
+The macOS builds are unsigned and unnotarized. After dragging Twig to
+Applications, either right-click → Open the first time, or clear the quarantine
+flag:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Twig.app
+```
+
 ## Status
 
 Version 0.1.0. The core loop (create, edit, restructure, undo, save/open) is
