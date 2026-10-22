@@ -7,8 +7,7 @@ on:
 
 jobs:
   check:
-    runs-on: docker
-    container: node:22-bookworm
+    runs-on: ubuntu-latest
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
