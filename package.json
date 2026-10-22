@@ -48,7 +48,9 @@
       "target": [
         "AppImage"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "artifactName": "Twig-${version}-${arch}.${ext}",
+      "syncDesktopName": true
     },
     "win": {
       "target": [
@@ -59,10 +61,18 @@
       "target": [
         "dmg"
       ],
-      "category": "public.app-category.productivity"
-    }
+      "category": "public.app-category.productivity",
+      "artifactName": "Twig-${version}-${arch}-mac.${ext}"
+    },
+    "publish": null
   },
   "trustedDependencies": [
     "electron"
-  ]
+  ],
+  "author": "quinntyx",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Quinntyx/twig.git"
+  },
+  "desktopName": "Twig"
 }

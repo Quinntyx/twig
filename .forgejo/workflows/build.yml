@@ -24,7 +24,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: Twig-macOS-x64
-          path: dist/Twig-*-mac.zip
+          path: dist/Twig-*-x64-mac.zip
           if-no-files-found: error
           retention-days: 30
 
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: Twig-macOS-arm64
-          path: dist/*-arm64-mac.zip
+          path: dist/Twig-*-arm64-mac.zip
           if-no-files-found: error
           retention-days: 30
 
@@ -65,6 +65,6 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: Twig-Linux-x64
-          path: dist/*.AppImage
+          path: dist/Twig-*-x86_64.AppImage
           if-no-files-found: error
           retention-days: 30
