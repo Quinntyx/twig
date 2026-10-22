@@ -78,11 +78,11 @@ function buildMenu(): void {
     {
       label: 'File',
       submenu: [
-        { label: 'New', accelerator: 'CmdOrCtrl+N', click: () => sendMenuAction('new') },
-        { label: 'Open…', accelerator: 'CmdOrCtrl+O', click: () => sendMenuAction('open') },
+        { label: 'New', accelerator: 'CmdOrCtrl+N', registerAccelerator: false, click: () => sendMenuAction('new') },
+        { label: 'Open…', accelerator: 'CmdOrCtrl+O', registerAccelerator: false, click: () => sendMenuAction('open') },
         { type: 'separator' },
-        { label: 'Save', accelerator: 'CmdOrCtrl+S', click: () => sendMenuAction('save') },
-        { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: () => sendMenuAction('save-as') },
+        { label: 'Save', accelerator: 'CmdOrCtrl+S', registerAccelerator: false, click: () => sendMenuAction('save') },
+        { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', registerAccelerator: false, click: () => sendMenuAction('save-as') },
         { type: 'separator' },
         { role: 'quit' }
       ]

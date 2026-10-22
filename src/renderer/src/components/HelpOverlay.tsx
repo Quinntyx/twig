@@ -43,16 +43,16 @@ const SECTIONS: Section[] = [
     title: 'History',
     shortcuts: [
       { keys: ['u'], description: 'Undo' },
-      { keys: ['Ctrl⇧z', 'Ctrl y'], description: 'Redo' }
+      { keys: ['Ctrl⇧Z', 'Ctrl Y'], description: 'Redo' }
     ]
   },
   {
     title: 'File',
     shortcuts: [
-      { keys: ['Ctrl n'], description: 'New map' },
-      { keys: ['Ctrl o'], description: 'Open…' },
-      { keys: ['Ctrl s'], description: 'Save' },
-      { keys: ['Ctrl⇧s'], description: 'Save as…' }
+      { keys: ['Ctrl N'], description: 'New map' },
+      { keys: ['Ctrl O'], description: 'Open…' },
+      { keys: ['Ctrl S'], description: 'Save' },
+      { keys: ['Ctrl⇧S'], description: 'Save as…' }
     ]
   }
 ]
