@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  macos-intel:
+    name: macOS Intel
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: npx --yes electron-builder --mac zip --x64 --publish never
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Twig-macOS-x64
+          path: dist/Twig-*-mac.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  macos-apple-silicon:
+    name: macOS Apple Silicon
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: npx --yes electron-builder --mac zip --arm64 --publish never
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Twig-macOS-arm64
+          path: dist/*-arm64-mac.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  linux-x64:
+    name: Linux x64
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: npx --yes electron-builder --linux AppImage --x64 --publish never
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Twig-Linux-x64
+          path: dist/*.AppImage
+          if-no-files-found: error
+          retention-days: 30
