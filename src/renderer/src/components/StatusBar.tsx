@@ -1,6 +1,7 @@
 import { formatChord } from '../../../shared/config'
 import { useMindStore } from '../store'
 import { countNodes } from '../lib/doc'
+import { markdownToPlainText } from '../lib/markdown'
 
 export function StatusBar(): React.JSX.Element {
   const editing = useMindStore((state) => state.editingId !== null)
@@ -8,7 +9,7 @@ export function StatusBar(): React.JSX.Element {
   const nodeCount = useMindStore((state) => countNodes(state.doc))
   const focusedText = useMindStore((state) => {
     const node = state.doc.nodes[state.focusedId]
-    return node?.text ?? ''
+    return node ? markdownToPlainText(node.text).replace(/\s+/g, ' ').trim() : ''
   })
 
   const key = (action: keyof typeof keybinds): string =>

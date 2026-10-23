@@ -1,7 +1,9 @@
 import type { MindNode, NodeSize } from '../../../shared/types'
+import { markdownToPlainText } from './markdown'
 
 /**
- * Text measurement and node sizing.
+ * Text measurement and node sizing. Node text is Markdown, so layout measures
+ * the visible plain text (formatting characters are not rendered).
  *
  * Layout runs synchronously in the renderer *and* in unit tests, so node sizes
  * are estimated from a deterministic glyph-width table rather than measured
@@ -116,7 +118,8 @@ export function wrapText(text: string, maxWidth = MAX_TEXT_WIDTH): string[] {
 }
 
 export function measureNodeText(text: string): { width: number; height: number; lines: string[] } {
-  const display = text.length > 0 ? text : PLACEHOLDER_TEXT
+  const plain = markdownToPlainText(text)
+  const display = plain.length > 0 ? plain : PLACEHOLDER_TEXT
   const lines = wrapText(display)
   const widest = Math.max(0, ...lines.map((line) => textWidth(line)))
   return {

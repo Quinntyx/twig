@@ -1,16 +1,23 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import ReactMarkdown from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
+import remarkGfm from 'remark-gfm'
 import type { NodeId } from '../../../shared/types'
 import { useMindStore } from '../store'
-import { PLACEHOLDER_TEXT, measureNodeText } from '../lib/measure'
+import { PLACEHOLDER_TEXT } from '../lib/measure'
+import { hasVisibleMarkdown } from '../lib/markdown'
+import { NodeMarkdownEditor } from './NodeMarkdownEditor'
 
 export type TwigNodeData = { text: string; root: boolean }
 export type TwigFlowNode = Node<TwigNodeData, 'twig'>
 
+const MARKDOWN_ELEMENTS = ['p', 'strong', 'em', 'del', 'code', 'a', 'br']
+
 /**
- * A single mind-map node. In NORMAL mode it renders text; in INSERT mode the
- * same box becomes a transparent textarea so the caret sits exactly where the
- * text does.
+ * A single mind-map node. In NORMAL mode it renders Markdown; in INSERT mode
+ * the same box becomes a WYSIWYG Markdown editor so the caret sits exactly
+ * where the text does.
  */
 export function MindNode({ id, data }: NodeProps<TwigFlowNode>): React.JSX.Element {
   const editingId = useMindStore((state) => state.editingId)
@@ -20,17 +27,13 @@ export function MindNode({ id, data }: NodeProps<TwigFlowNode>): React.JSX.Eleme
 
   const editing = editingId === id
   const focused = focusedId === id
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const lines = useMemo(() => measureNodeText(data.text).lines, [data.text])
+  const hasText = hasVisibleMarkdown(data.text)
 
-  useEffect(() => {
-    if (!editing) return
-    const el = textareaRef.current
-    if (!el) return
-    el.focus({ preventScroll: true })
-    const end = el.value.length
-    el.setSelectionRange(end, end)
-  }, [editing])
+  const finishEditing = useCallback(() => {
+    // The editor can blur after focus has already moved to a newly created
+    // node; never stop that newer edit session.
+    if (useMindStore.getState().editingId === (id as NodeId)) stopEditing()
+  }, [id, stopEditing])
 
   const className = [
     'twig-node',
@@ -47,40 +50,32 @@ export function MindNode({ id, data }: NodeProps<TwigFlowNode>): React.JSX.Eleme
       <Handle className="twig-handle" type="source" position={Position.Right} isConnectable={false} />
 
       {editing ? (
-        <textarea
-          ref={textareaRef}
-          className="twig-node__input"
-          value={data.text}
-          spellCheck={false}
-          placeholder={PLACEHOLDER_TEXT}
-          onChange={(event) => updateText(id as NodeId, event.target.value)}
-          onBlur={() => stopEditing()}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              event.preventDefault()
-              event.stopPropagation()
-              stopEditing()
-              return
-            }
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault()
-              event.stopPropagation()
-              stopEditing()
-              return
-            }
-            if (event.key === 'Tab') {
-              event.preventDefault()
-              const el = event.currentTarget
-              const start = el.selectionStart
-              const end = el.selectionEnd
-              updateText(id as NodeId, `${data.text.slice(0, start)}  ${data.text.slice(end)}`)
-              requestAnimationFrame(() => el.setSelectionRange(start + 2, start + 2))
-            }
-          }}
+        <NodeMarkdownEditor
+          text={data.text}
+          onChange={(text) => updateText(id as NodeId, text)}
+          onDone={finishEditing}
         />
       ) : (
-        <div className={`twig-node__text${data.text.length === 0 ? ' twig-node__text--empty' : ''}`}>
-          {data.text.length === 0 ? PLACEHOLDER_TEXT : lines.join('\n')}
+        <div className={`twig-node__text${hasText ? '' : ' twig-node__text--empty'}`}>
+          {hasText ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkBreaks]}
+              allowedElements={MARKDOWN_ELEMENTS}
+              unwrapDisallowed
+              skipHtml
+              components={{
+                a: ({ href, children }) => (
+                  <a href={href} target="_blank" rel="noreferrer">
+                    {children}
+                  </a>
+                )
+              }}
+            >
+              {data.text}
+            </ReactMarkdown>
+          ) : (
+            PLACEHOLDER_TEXT
+          )}
         </div>
       )}
     </div>

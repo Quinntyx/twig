@@ -18,7 +18,7 @@ Other scripts:
 
 ```bash
 bun run typecheck    # strict TypeScript, main + renderer
-bun test             # unit tests (document ops, file format, layout, keys)
+bun run test         # unit tests (document ops, file format, layout, keys, Markdown)
 bun run build        # typecheck + production bundles in out/
 bun run dist         # packaged installers via electron-builder
 ```
@@ -27,7 +27,7 @@ bun run dist         # packaged installers via electron-builder
 
 | Key | Action |
 | --- | --- |
-| `h` `j` `k` `l` / arrows | Focus parent, next sibling, previous sibling, first child |
+| `h` `j` `k` `l` / arrows | Focus parent, next sibling, previous sibling, most recently visited child |
 | `i` | Edit the focused node |
 | `Enter` | Finish editing (`⇧Enter` inserts a line break) |
 | `o` | New sibling below |
@@ -39,7 +39,23 @@ bun run dist         # packaged installers via electron-builder
 | `?` | Shortcut reference |
 | `Esc` | Cancel editing, close help |
 
-Clicking focuses a node; double-clicking edits it.
+Clicking focuses a node; double-clicking edits it. Moving left remembers which
+child you came from, so moving right returns there instead of jumping to the
+first child. That memory is per document session and never written to the file.
+
+## Markdown
+
+Node text is Markdown. Viewing a node renders it; editing opens a small
+WYSIWYG editor in place, so the formatting is visible while you type. The saved
+`.twig.json` still contains the Markdown source.
+
+Inline formatting and links are supported through Markdown input rules:
+`**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, and links. While
+editing, `Ctrl+b`, `Ctrl+i`, `Ctrl+Shift+x`, and `Ctrl+e` toggle the
+corresponding inline marks (Command on macOS). Block structures are
+intentionally disabled so Enter always means "finish editing"; node text stays
+a compact label. Layout estimates node size from the rendered plain text, not
+the Markdown punctuation.
 
 ## File format
 
@@ -71,8 +87,8 @@ src/
   renderer/
     index.html
     src/
-      components/  Canvas (React Flow), MindNode, Toolbar, StatusBar, HelpOverlay
-      lib/         doc (pure tree ops), layout, measure, parse, keyboard, file, commands
+      components/  Canvas (React Flow), MindNode, NodeMarkdownEditor, Toolbar, StatusBar, HelpOverlay
+      lib/         doc (pure tree ops), layout, measure, parse, keyboard, markdown, markdownEditor, file, commands
       store.ts     Zustand store: document, focus, edit mode, undo/redo
 ```
 
@@ -135,7 +151,9 @@ aliases use Command rather than Control, and the help overlay displays ⌘.
 
 Creating or deleting a node preserves the current mode: from normal mode the
 new node is focused but not opened for editing; from insert mode the new node
-stays in insert mode so you can keep typing.
+stays in insert mode so you can keep typing. Focus navigation follows the
+remembered child per parent, and that memory resets when a document is opened
+or created.
 
 ## Building installers
 

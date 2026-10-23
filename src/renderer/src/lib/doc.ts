@@ -167,14 +167,25 @@ export function deleteSubtree(doc: MindMapDoc, id: NodeId): { doc: MindMapDoc; f
 }
 
 /** Move focus in a tree. Stays put when there is no node in that direction. */
-export function focusMove(doc: MindMapDoc, id: NodeId, direction: Direction): NodeId {
+export function focusMove(
+  doc: MindMapDoc,
+  id: NodeId,
+  direction: Direction,
+  lastChildByParent: Record<NodeId, NodeId> = {}
+): NodeId {
   const node = doc.nodes[id]
   if (!node) return doc.rootId
   switch (direction) {
     case 'left':
       return node.parentId ?? id
-    case 'right':
+    case 'right': {
+      // Return to the child the user most recently came from, not always the
+      // first one. The map is in-memory only and may contain stale ids after
+      // deletes/undo, so membership is the source of truth.
+      const remembered = lastChildByParent[id]
+      if (remembered && node.children.includes(remembered)) return remembered
       return node.children[0] ?? id
+    }
     case 'up': {
       const siblings = siblingsOf(doc, id)
       const index = siblings.indexOf(id)

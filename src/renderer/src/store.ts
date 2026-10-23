@@ -21,6 +21,22 @@ export type CreateKind = 'parent' | 'child' | 'sibling-before' | 'sibling-after'
 
 const HISTORY_LIMIT = 100
 
+/**
+ * Remember which child focus came from for each parent. This is deliberately
+ * session-only state: it makes Left/Right navigation feel reversible without
+ * polluting saved `.twig.json` files.
+ */
+function rememberChild(
+  lastChildByParent: Record<NodeId, NodeId>,
+  doc: MindMapDoc,
+  id: NodeId
+): Record<NodeId, NodeId> {
+  const parentId = doc.nodes[id]?.parentId
+  if (!parentId) return lastChildByParent
+  if (lastChildByParent[parentId] === id) return lastChildByParent
+  return { ...lastChildByParent, [parentId]: id }
+}
+
 export interface MindMapState {
   doc: MindMapDoc
   focusedId: NodeId
@@ -33,6 +49,8 @@ export interface MindMapState {
   insertKeybinds: InsertKeybinds
   past: MindMapDoc[]
   future: MindMapDoc[]
+  /** Parent -> most recently focused child, for reversible Left/Right nav. */
+  lastChildByParent: Record<NodeId, NodeId>
   /** Document as it was when the current insert session started. */
   editBaseline: MindMapDoc | null
 
@@ -69,6 +87,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
   insertKeybinds: DEFAULT_INSERT_KEYBINDS,
   past: [],
   future: [],
+  lastChildByParent: {},
   editBaseline: null,
 
   commitDoc(next, focusId, edit = false) {
@@ -82,6 +101,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
         focusedId: focusExists ? focus : next.rootId,
         editingId: edit ? (focusExists ? focus : next.rootId) : null,
         editBaseline: edit ? next : null,
+        lastChildByParent: rememberChild(state.lastChildByParent, next, focusExists ? focus : next.rootId),
         dirty: true
       }
     })
@@ -90,14 +110,23 @@ export const useMindStore = create<MindMapState>((set, get) => ({
   focusNode(id) {
     if (!get().doc.nodes[id]) return
     if (get().editingId !== null) get().stopEditing()
-    set({ focusedId: id, editingId: null })
+    set((state) => ({
+      focusedId: id,
+      editingId: null,
+      lastChildByParent: rememberChild(state.lastChildByParent, state.doc, id)
+    }))
   },
 
   moveFocus(direction) {
     if (get().editingId !== null) get().stopEditing()
-    const { doc, focusedId } = get()
-    const next = focusMove(doc, focusedId, direction)
-    if (next !== focusedId) set({ focusedId: next })
+    const { doc, focusedId, lastChildByParent } = get()
+    const next = focusMove(doc, focusedId, direction, lastChildByParent)
+    if (next !== focusedId) {
+      set((state) => ({
+        focusedId: next,
+        lastChildByParent: rememberChild(state.lastChildByParent, doc, next)
+      }))
+    }
   },
 
   createNode(kind) {
@@ -133,8 +162,14 @@ export const useMindStore = create<MindMapState>((set, get) => ({
 
   startEditing(id) {
     const target = id ?? get().focusedId
-    if (!get().doc.nodes[target]) return
-    set({ focusedId: target, editingId: target, editBaseline: get().doc })
+    const { doc, lastChildByParent } = get()
+    if (!doc.nodes[target]) return
+    set({
+      focusedId: target,
+      editingId: target,
+      editBaseline: doc,
+      lastChildByParent: rememberChild(lastChildByParent, doc, target)
+    })
   },
 
   stopEditing() {
@@ -166,15 +201,16 @@ export const useMindStore = create<MindMapState>((set, get) => ({
     const previous = past[0]
     if (!previous) return
     const focus = previous.nodes[focusedId] ? focusedId : previous.rootId
-    set({
+    set((state) => ({
       doc: previous,
       past: past.slice(1),
       future: [doc, ...future].slice(0, HISTORY_LIMIT),
       focusedId: focus,
       editingId: null,
       editBaseline: null,
+      lastChildByParent: rememberChild(state.lastChildByParent, previous, focus),
       dirty: true
-    })
+    }))
   },
 
   redo() {
@@ -183,15 +219,16 @@ export const useMindStore = create<MindMapState>((set, get) => ({
     const next = future[0]
     if (!next) return
     const focus = next.nodes[focusedId] ? focusedId : next.rootId
-    set({
+    set((state) => ({
       doc: next,
       past: [doc, ...past].slice(0, HISTORY_LIMIT),
       future: future.slice(1),
       focusedId: focus,
       editingId: null,
       editBaseline: null,
+      lastChildByParent: rememberChild(state.lastChildByParent, next, focus),
       dirty: true
-    })
+    }))
   },
 
   newDoc() {
@@ -205,6 +242,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
       dirty: false,
       past: [],
       future: [],
+      lastChildByParent: {},
       toast: null
     })
   },
@@ -219,6 +257,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
       dirty: false,
       past: [],
       future: [],
+      lastChildByParent: {},
       toast: null
     })
   },

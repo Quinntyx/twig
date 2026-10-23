@@ -42,6 +42,11 @@ describe('text measurement', () => {
     expect(measured.width).toBeGreaterThan(0)
   })
 
+  it('measures Markdown by its visible text, not its syntax', () => {
+    expect(measureNodeText('**bold**').width).toBe(measureNodeText('bold').width)
+    expect(measureNodeText('[label](https://example.com)').lines).toEqual(['label'])
+  })
+
   it('sizes nodes with padding for all lines', () => {
     const size = estimateNodeSize({ text: 'one\ntwo\nthree' })
     expect(size.height).toBe(NODE_LINE_HEIGHT * 3 + 22)

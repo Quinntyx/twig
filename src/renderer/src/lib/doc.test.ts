@@ -139,6 +139,12 @@ describe('focusMove', () => {
     expect(focusMove(doc, 'r', 'up')).toBe('r')
     expect(focusMove(doc, 'r', 'left')).toBe('r')
   })
+
+  it('returns to the remembered child when moving right', () => {
+    const doc = tree()
+    expect(focusMove(doc, 'r', 'right', { r: 'c' })).toBe('c')
+    expect(focusMove(doc, 'r', 'right', { r: 'b1' })).toBe('a')
+  })
 })
 
 describe('setText and structural helpers', () => {

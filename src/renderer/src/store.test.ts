@@ -48,3 +48,56 @@ describe('mode preservation', () => {
     expect(state.editingId).toBe(state.focusedId)
   })
 })
+
+describe('child focus memory', () => {
+  it('returns to the child that was focused most recently', () => {
+    const rootId = useMindStore.getState().focusedId
+    useMindStore.getState().createNode('child')
+    const first = useMindStore.getState().focusedId
+    useMindStore.getState().focusNode(rootId)
+    useMindStore.getState().createNode('child')
+    const second = useMindStore.getState().focusedId
+    useMindStore.getState().focusNode(rootId)
+    useMindStore.getState().createNode('child')
+    const third = useMindStore.getState().focusedId
+
+    useMindStore.getState().focusNode(second)
+    useMindStore.getState().moveFocus('left')
+    expect(useMindStore.getState().focusedId).toBe(rootId)
+    useMindStore.getState().moveFocus('right')
+    expect(useMindStore.getState().focusedId).toBe(second)
+
+    // A different child becomes the remembered one.
+    useMindStore.getState().focusNode(third)
+    useMindStore.getState().moveFocus('left')
+    useMindStore.getState().moveFocus('right')
+    expect(useMindStore.getState().focusedId).toBe(third)
+    expect(first).not.toBe(third)
+  })
+
+  it('falls back to the first child when the remembered child is gone', () => {
+    const rootId = useMindStore.getState().focusedId
+    useMindStore.getState().createNode('child')
+    const first = useMindStore.getState().focusedId
+    useMindStore.getState().focusNode(rootId)
+    useMindStore.getState().createNode('child')
+    const doomed = useMindStore.getState().focusedId
+
+    useMindStore.getState().focusNode(doomed)
+    useMindStore.getState().deleteFocused()
+    expect(useMindStore.getState().focusedId).toBe(first)
+
+    // Simulate the remembered id surviving a delete elsewhere.
+    useMindStore.setState({ lastChildByParent: { [rootId]: doomed } })
+    useMindStore.getState().focusNode(rootId)
+    useMindStore.getState().moveFocus('right')
+    expect(useMindStore.getState().focusedId).toBe(first)
+  })
+
+  it('does not persist focus memory into the document', () => {
+    useMindStore.getState().createNode('child')
+    const state = useMindStore.getState()
+    const saved = JSON.stringify(state.doc)
+    expect(saved).not.toContain('lastChild')
+  })
+})
