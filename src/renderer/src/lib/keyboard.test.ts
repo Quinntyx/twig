@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_KEYBINDS, type Keybinds } from '../../../shared/config'
-import { keyToAction, type KeyLike } from './keyboard'
+import {
+  DEFAULT_INSERT_KEYBINDS,
+  DEFAULT_KEYBINDS,
+  type InsertKeybinds,
+  type Keybinds
+} from '../../../shared/config'
+import { keyToAction, keyToInsertAction, type KeyLike } from './keyboard'
 
 function key(overrides: Partial<KeyLike>): KeyLike {
   return { key: '', ...overrides }
@@ -105,5 +110,108 @@ describe('keyToAction', () => {
     expect(keyToAction(key({ key: 'p' }), workman)).toEqual({ type: 'create', kind: 'sibling-after' })
     expect(keyToAction(key({ key: 'h' }), workman)).toBeNull()
     expect(keyToAction(key({ key: 'H', shiftKey: true }), workman)).toBeNull()
+  })
+})
+
+describe('keyToInsertAction', () => {
+  it('maps Ctrl+H/J/K/L to the shifted creation actions', () => {
+    expect(keyToInsertAction(key({ key: 'h', ctrlKey: true }))).toEqual({
+      type: 'create',
+      kind: 'parent'
+    })
+    expect(keyToInsertAction(key({ key: 'j', ctrlKey: true }))).toEqual({
+      type: 'create',
+      kind: 'sibling-after'
+    })
+    expect(keyToInsertAction(key({ key: 'k', ctrlKey: true }))).toEqual({
+      type: 'create',
+      kind: 'sibling-before'
+    })
+    expect(keyToInsertAction(key({ key: 'l', ctrlKey: true }))).toEqual({
+      type: 'create',
+      kind: 'child'
+    })
+  })
+
+  it('does not respond to plain or shifted letters', () => {
+    expect(keyToInsertAction(key({ key: 'h' }))).toBeNull()
+    expect(keyToInsertAction(key({ key: 'H', shiftKey: true }))).toBeNull()
+    expect(keyToInsertAction(key({ key: 'z', ctrlKey: true }))).toBeNull()
+  })
+
+  it('applies a Workman-style insert keymap', () => {
+    const workmanInsert: InsertKeybinds = {
+      createParent: ['Ctrl+y'],
+      createChild: ['Ctrl+o'],
+      createSiblingBefore: ['Ctrl+e'],
+      createSiblingAfter: ['Ctrl+n']
+    }
+
+    expect(keyToInsertAction(key({ key: 'y', ctrlKey: true }), workmanInsert)).toEqual({
+      type: 'create',
+      kind: 'parent'
+    })
+    expect(keyToInsertAction(key({ key: 'o', ctrlKey: true }), workmanInsert)).toEqual({
+      type: 'create',
+      kind: 'child'
+    })
+    expect(keyToInsertAction(key({ key: 'e', ctrlKey: true }), workmanInsert)).toEqual({
+      type: 'create',
+      kind: 'sibling-before'
+    })
+    expect(keyToInsertAction(key({ key: 'n', ctrlKey: true }), workmanInsert)).toEqual({
+      type: 'create',
+      kind: 'sibling-after'
+    })
+  })
+
+  it('keeps the insert defaults independent of normal keybinds', () => {
+    expect(keyToInsertAction(key({ key: 'h', ctrlKey: true }), DEFAULT_INSERT_KEYBINDS)).toEqual({
+      type: 'create',
+      kind: 'parent'
+    })
+    expect(keyToAction(key({ key: 'h', ctrlKey: true }))).toBeNull()
+  })
+
+  it('uses Command instead of Control for insert aliases on macOS', () => {
+    const insertKeybinds: InsertKeybinds = {
+      ...DEFAULT_INSERT_KEYBINDS,
+      createParent: ['Ctrl+h']
+    }
+
+    expect(keyToInsertAction(key({ key: 'h', metaKey: true }), insertKeybinds, true)).toEqual({
+      type: 'create',
+      kind: 'parent'
+    })
+    expect(keyToInsertAction(key({ key: 'h', ctrlKey: true }), insertKeybinds, true)).toBeNull()
+    expect(keyToInsertAction(key({ key: 'h', metaKey: true }), insertKeybinds, false)).toBeNull()
+    expect(keyToInsertAction(key({ key: 'h', ctrlKey: true }), insertKeybinds, false)).toEqual({
+      type: 'create',
+      kind: 'parent'
+    })
+  })
+
+  it('reads DOM events through their getters', () => {
+    // Properties such as key/ctrlKey are prototype getters on KeyboardEvent,
+    // so spreading the event would lose them.
+    const domEvent = {
+      get key(): string {
+        return 'l'
+      },
+      get ctrlKey(): boolean {
+        return true
+      },
+      get metaKey(): boolean {
+        return false
+      },
+      get shiftKey(): boolean {
+        return false
+      },
+      get altKey(): boolean {
+        return false
+      }
+    }
+
+    expect(keyToInsertAction(domEvent)).toEqual({ type: 'create', kind: 'child' })
   })
 })

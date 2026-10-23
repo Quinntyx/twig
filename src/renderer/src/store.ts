@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import type { Direction, MindMapDoc, NodeId } from '../../shared/types'
-import { DEFAULT_KEYBINDS, type Keybinds } from '../../shared/config'
+import {
+  DEFAULT_INSERT_KEYBINDS,
+  DEFAULT_KEYBINDS,
+  type InsertKeybinds,
+  type Keybinds
+} from '../../shared/config'
 import {
   addChild,
   addSibling,
@@ -25,6 +30,7 @@ export interface MindMapState {
   helpOpen: boolean
   toast: string | null
   keybinds: Keybinds
+  insertKeybinds: InsertKeybinds
   past: MindMapDoc[]
   future: MindMapDoc[]
   /** Document as it was when the current insert session started. */
@@ -46,6 +52,7 @@ export interface MindMapState {
   setHelpOpen(open: boolean): void
   setToast(toast: string | null): void
   setKeybinds(keybinds: Keybinds): void
+  setInsertKeybinds(insertKeybinds: InsertKeybinds): void
 }
 
 const initialDoc = createDoc()
@@ -59,6 +66,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
   helpOpen: false,
   toast: null,
   keybinds: DEFAULT_KEYBINDS,
+  insertKeybinds: DEFAULT_INSERT_KEYBINDS,
   past: [],
   future: [],
   editBaseline: null,
@@ -93,32 +101,34 @@ export const useMindStore = create<MindMapState>((set, get) => ({
   },
 
   createNode(kind) {
-    const { doc, focusedId } = get()
+    const { doc, focusedId, editingId } = get()
+    const keepEditing = editingId !== null
 
     if (kind === 'parent') {
       const result = insertParent(doc, focusedId)
-      if (result.id !== focusedId) get().commitDoc(result.doc, result.id, true)
+      if (result.id !== focusedId) get().commitDoc(result.doc, result.id, keepEditing)
       return
     }
 
     if (kind === 'child') {
       const result = addChild(doc, focusedId)
-      if (result.id !== focusedId) get().commitDoc(result.doc, result.id, true)
+      if (result.id !== focusedId) get().commitDoc(result.doc, result.id, keepEditing)
       return
     }
 
     const result = addSibling(doc, focusedId, kind === 'sibling-before' ? 'before' : 'after')
-    if (result.id !== focusedId) get().commitDoc(result.doc, result.id, true)
+    if (result.id !== focusedId) get().commitDoc(result.doc, result.id, keepEditing)
   },
 
   deleteFocused() {
-    const { doc, focusedId } = get()
+    const { doc, focusedId, editingId } = get()
+    const keepEditing = editingId !== null
     if (doc.rootId === focusedId) {
       set({ toast: 'The root node cannot be deleted.' })
       return
     }
     const result = deleteSubtree(doc, focusedId)
-    get().commitDoc(result.doc, result.focusId, false)
+    get().commitDoc(result.doc, result.focusId, keepEditing)
   },
 
   startEditing(id) {
@@ -227,5 +237,9 @@ export const useMindStore = create<MindMapState>((set, get) => ({
 
   setKeybinds(keybinds) {
     set({ keybinds })
+  },
+
+  setInsertKeybinds(insertKeybinds) {
+    set({ insertKeybinds })
   }
 }))

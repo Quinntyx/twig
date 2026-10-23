@@ -10,6 +10,7 @@ import {
 
 const bridge: TwigBridge = {
   isElectron: true,
+  platform: process.platform,
   openFlow: () => ipcRenderer.invoke(IPC.open) as Promise<OpenFlowResult>,
   saveFlow: (content, filePath, forceDialog) =>
     ipcRenderer.invoke(IPC.save, content, filePath, forceDialog) as Promise<SaveFlowResult>,

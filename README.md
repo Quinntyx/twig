@@ -107,6 +107,12 @@ fields fall back to the built-in defaults in memory.
     "createChild": ["Shift+Enter", "Shift+o"],
     "createSiblingBefore": ["Shift+e"],
     "createSiblingAfter": ["p", "Shift+n"]
+  },
+  "insertKeybinds": {
+    "createParent": ["Ctrl+y"],
+    "createChild": ["Ctrl+o"],
+    "createSiblingBefore": ["Ctrl+e"],
+    "createSiblingAfter": ["Ctrl+n"]
   }
 }
 ```
@@ -118,6 +124,18 @@ creation keys with their Workman positions. Chords use `+` (`Shift+h`,
 unshifted movement keys focus neighbours; the shifted versions create a node in
 that direction: `Shift+h`/`Shift+y` parent, `Shift+l`/`Shift+o` child,
 `Shift+j`/`Shift+n` sibling below, `Shift+k`/`Shift+e` sibling above.
+
+`insertKeybinds` adds aliases for the shifted creation keys that work while a
+node is being edited, so you can make a new node without pressing Escape. They
+only apply in insert mode and win over normal bindings there: the defaults are
+`Ctrl+h` parent, `Ctrl+j` sibling below, `Ctrl+k` sibling above, and `Ctrl+l`
+child. The example uses the Workman positions (`Ctrl+y`, `Ctrl+n`, `Ctrl+e`,
+`Ctrl+o`). Shifted letters stay available for typing capitals. On macOS these
+aliases use Command rather than Control, and the help overlay displays ⌘.
+
+Creating or deleting a node preserves the current mode: from normal mode the
+new node is focused but not opened for editing; from insert mode the new node
+stays in insert mode so you can keep typing.
 
 ## Building installers
 

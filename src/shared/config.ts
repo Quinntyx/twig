@@ -30,6 +30,17 @@ export const KEYBIND_ACTIONS = [
 export type KeybindAction = (typeof KEYBIND_ACTIONS)[number]
 export type Keybinds = Record<KeybindAction, string[]>
 
+/** Actions that also get an insert-mode alias (creation only). */
+export const INSERT_KEYBIND_ACTIONS = [
+  'createParent',
+  'createChild',
+  'createSiblingBefore',
+  'createSiblingAfter'
+] as const
+
+export type InsertKeybindAction = (typeof INSERT_KEYBIND_ACTIONS)[number]
+export type InsertKeybinds = Record<InsertKeybindAction, string[]>
+
 /**
  * Values use `+`-separated chords. `Ctrl` means Ctrl on Linux/Windows and is
  * also accepted as Cmd on macOS, matching the old hard-coded behaviour. Keys
@@ -55,14 +66,27 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   saveMapAs: ['Ctrl+Shift+s']
 }
 
+/**
+ * Insert-mode aliases for the shifted creation keys. These are only active
+ * while a node is being edited, so they can reuse file/history chords.
+ */
+export const DEFAULT_INSERT_KEYBINDS: InsertKeybinds = {
+  createParent: ['Ctrl+h'],
+  createChild: ['Ctrl+l'],
+  createSiblingBefore: ['Ctrl+k'],
+  createSiblingAfter: ['Ctrl+j']
+}
+
 export interface TwigConfig {
   version: number
   keybinds: Keybinds
+  insertKeybinds: InsertKeybinds
 }
 
 export const DEFAULT_CONFIG: TwigConfig = {
   version: CONFIG_VERSION,
-  keybinds: DEFAULT_KEYBINDS
+  keybinds: DEFAULT_KEYBINDS,
+  insertKeybinds: DEFAULT_INSERT_KEYBINDS
 }
 
 export interface KeyLike {
@@ -203,10 +227,32 @@ export function normalizeKeybinds(raw: unknown): Keybinds {
   return result
 }
 
+export function normalizeInsertKeybinds(raw: unknown): InsertKeybinds {
+  const source =
+    isRecord(raw) && isRecord(raw['insertKeybinds'])
+      ? raw['insertKeybinds']
+      : isRecord(raw)
+        ? raw
+        : {}
+
+  const result = {} as InsertKeybinds
+  for (const action of INSERT_KEYBIND_ACTIONS) {
+    const candidates = asStringArray(source[action])
+      .map((value) => value.trim())
+      .filter((value) => parseChord(value) !== null)
+    result[action] = candidates.length > 0 ? candidates : [...DEFAULT_INSERT_KEYBINDS[action]]
+  }
+  return result
+}
+
 export function normalizeConfig(raw: unknown): TwigConfig {
   const version =
     isRecord(raw) && typeof raw['version'] === 'number' ? raw['version'] : CONFIG_VERSION
-  return { version, keybinds: normalizeKeybinds(raw) }
+  return {
+    version,
+    keybinds: normalizeKeybinds(raw),
+    insertKeybinds: normalizeInsertKeybinds(raw)
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -227,12 +273,12 @@ const DISPLAY_KEYS: Record<string, string> = {
 }
 
 /** Render a binding the way the help overlay and status bar show it. */
-export function formatChord(spec: string): string {
+export function formatChord(spec: string, metaForCtrl = false): string {
   const chord = parseChord(spec)
   if (!chord) return spec
 
   const prefix =
-    (chord.mod ? 'Ctrl' : '') +
+    (chord.mod ? (metaForCtrl ? '⌘' : 'Ctrl') : '') +
     (chord.meta ? '⌘' : '') +
     (chord.alt ? '⌥' : '') +
     (chord.shift ? '⇧' : '')
@@ -242,6 +288,6 @@ export function formatChord(spec: string): string {
 }
 
 /** All displayable bindings for an action, e.g. `['y', '←']`. */
-export function formatKeybinds(bindings: string[]): string[] {
-  return bindings.map(formatChord)
+export function formatKeybinds(bindings: string[], metaForCtrl = false): string[] {
+  return bindings.map((binding) => formatChord(binding, metaForCtrl))
 }

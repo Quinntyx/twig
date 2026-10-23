@@ -33,6 +33,7 @@ export default function App(): React.JSX.Element {
       .then((result) => {
         if (cancelled) return
         useMindStore.getState().setKeybinds(result.config.keybinds)
+        useMindStore.getState().setInsertKeybinds(result.config.insertKeybinds)
         if (result.error) setToast(result.error)
       })
       .catch((error: unknown) => {

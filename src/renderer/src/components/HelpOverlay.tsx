@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { formatKeybinds, type KeybindAction } from '../../../shared/config'
+import { formatKeybinds, type InsertKeybindAction, type KeybindAction } from '../../../shared/config'
+import { isMacPlatform } from '../lib/keyboard'
 import { useMindStore } from '../store'
 
 interface Shortcut {
@@ -15,9 +16,13 @@ interface Section {
 export function HelpOverlay(): React.JSX.Element {
   const setHelpOpen = useMindStore((state) => state.setHelpOpen)
   const keybinds = useMindStore((state) => state.keybinds)
+  const insertKeybinds = useMindStore((state) => state.insertKeybinds)
+  const isMac = isMacPlatform()
   const dialogRef = useRef<HTMLDivElement>(null)
 
   const keys = (action: KeybindAction): string[] => formatKeybinds(keybinds[action])
+  const insertKeys = (action: InsertKeybindAction): string[] =>
+    formatKeybinds(insertKeybinds[action], isMac)
 
   const sections: Section[] = [
     {
@@ -36,6 +41,15 @@ export function HelpOverlay(): React.JSX.Element {
         { keys: ['Enter'], description: 'Finish editing' },
         { keys: ['⇧Enter'], description: 'New line while editing' },
         { keys: ['Esc'], description: 'Cancel editing / close help' }
+      ]
+    },
+    {
+      title: 'While editing',
+      shortcuts: [
+        { keys: insertKeys('createSiblingAfter'), description: 'New sibling below' },
+        { keys: insertKeys('createSiblingBefore'), description: 'New sibling above' },
+        { keys: insertKeys('createChild'), description: 'New child' },
+        { keys: insertKeys('createParent'), description: 'New parent (wraps this node)' }
       ]
     },
     {

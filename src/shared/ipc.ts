@@ -33,6 +33,7 @@ export interface ConfigResult {
 
 export interface TwigBridge {
   isElectron: true
+  platform: string
   openFlow(): Promise<OpenFlowResult>
   saveFlow(content: string, filePath: string | null, forceDialog: boolean): Promise<SaveFlowResult>
   getConfig(): Promise<ConfigResult>
