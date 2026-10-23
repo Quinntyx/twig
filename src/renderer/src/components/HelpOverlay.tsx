@@ -38,9 +38,9 @@ export function HelpOverlay(): React.JSX.Element {
       title: 'Edit',
       shortcuts: [
         { keys: keys('edit'), description: 'Edit the focused node' },
-        { keys: ['Enter'], description: 'Finish editing' },
-        { keys: ['⇧Enter'], description: 'New line while editing' },
-        { keys: ['Esc'], description: 'Cancel editing / close help' }
+        { keys: ['Enter'], description: 'New paragraph while editing' },
+        { keys: ['⇧Enter'], description: 'Line break while editing' },
+        { keys: ['Esc'], description: 'Finish editing / close help' }
       ]
     },
     {

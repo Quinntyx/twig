@@ -43,4 +43,31 @@ describe('markdown node editor', () => {
     expect(create('line one\\\nline two').getMarkdown()).toContain('line one')
     expect(create('line one\\\nline two').getMarkdown()).toContain('line two')
   })
+
+  it('round-trips headings instead of discarding them', () => {
+    expect(create('# Heading').getMarkdown()).toBe('# Heading')
+    expect(create('## Sub heading').getMarkdown()).toBe('## Sub heading')
+    expect(create('Text\n\n# Heading\n\nMore').getMarkdown()).toBe('Text\n\n# Heading\n\nMore')
+  })
+
+  it('round-trips lists, quotes, and code blocks', () => {
+    const markdown = '- one\n- two'
+    expect(create(markdown).getMarkdown()).toBe(markdown)
+    expect(create('> quote').getMarkdown()).toBe('> quote')
+    expect(create('```js\ncode()\n```').getMarkdown()).toContain('```js')
+    expect(create('```js\ncode()\n```').getMarkdown()).toContain('code()')
+  })
+
+  it('round-trips GFM task lists, tables, and images', () => {
+    const tasks = '- [ ] todo\n- [x] done'
+    expect(create(tasks).getMarkdown()).toBe(tasks)
+
+    const table = create('| a | b |\n| - | - |\n| 1 | 2 |').getMarkdown()
+    expect(table).toContain('| a')
+    expect(table).toContain('| 1')
+
+    expect(create('![alt](https://example.com/x.png)').getMarkdown()).toBe(
+      '![alt](https://example.com/x.png)'
+    )
+  })
 })

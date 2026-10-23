@@ -30,6 +30,11 @@ function CanvasInner(): React.JSX.Element {
   const layoutRef = useRef(layout)
   layoutRef.current = layout
 
+  // Never feed an in-flight animation's intermediate zoom back into the next
+  // setCenter call. During fast keyboard navigation that would compound the
+  // animation and drift the global zoom.
+  const settledZoomRef = useRef(1)
+
   const nodes = useMemo<TwigFlowNode[]>(
     () =>
       layout.nodes.map((item) => {
@@ -67,12 +72,11 @@ function CanvasInner(): React.JSX.Element {
   useEffect(() => {
     const node = layoutRef.current.byId[focusedId]
     if (!node) return
-    const zoom = getZoom() || 1
     void setCenter(node.x + node.width / 2, node.y + node.height / 2, {
-      zoom,
+      zoom: settledZoomRef.current,
       duration: 180
     })
-  }, [focusedId, getZoom, setCenter])
+  }, [focusedId, setCenter])
 
   // New/open documents start with a fitted view.
   const rootId = doc.rootId
@@ -96,6 +100,9 @@ function CanvasInner(): React.JSX.Element {
         onNodeDoubleClick={(_event, node) => startEditing(node.id)}
         onPaneClick={() => {
           if (editingId !== null) stopEditing()
+        }}
+        onMoveEnd={() => {
+          settledZoomRef.current = getZoom() || settledZoomRef.current
         }}
         nodesDraggable={false}
         nodesConnectable={false}

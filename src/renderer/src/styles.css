@@ -274,12 +274,172 @@ kbd {
   margin: 0;
 }
 
+/* Blank lines between Markdown blocks become a 20px gap, matching measure.ts. */
+.twig-node__text > * + *,
+.twig-node__prosemirror > * + * {
+  margin-top: 20px;
+}
+
 .twig-node__text p + p {
   margin-top: 20px;
 }
 
 .twig-node__text strong {
   font-weight: 650;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) h1,
+:is(.twig-node__text, .twig-node__prosemirror) h2,
+:is(.twig-node__text, .twig-node__prosemirror) h3,
+:is(.twig-node__text, .twig-node__prosemirror) h4,
+:is(.twig-node__text, .twig-node__prosemirror) h5,
+:is(.twig-node__text, .twig-node__prosemirror) h6 {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) h1 {
+  font-size: 19px;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) h2 {
+  font-size: 17px;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) h3 {
+  font-size: 15.5px;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) h4,
+:is(.twig-node__text, .twig-node__prosemirror) h5,
+:is(.twig-node__text, .twig-node__prosemirror) h6 {
+  font-size: 14px;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) ul,
+:is(.twig-node__text, .twig-node__prosemirror) ol {
+  margin: 0;
+  padding-left: 16px;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) li {
+  margin: 0;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) li p {
+  margin: 0;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) blockquote {
+  margin: 0;
+  padding-left: 8px;
+  border-left: 2px solid var(--border-strong);
+  color: var(--muted);
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) pre {
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(110, 231, 160, 0.06);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  overflow: hidden;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) th,
+:is(.twig-node__text, .twig-node__prosemirror) td {
+  padding: 2px 4px;
+  border: 1px solid var(--border-strong);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) th {
+  background: rgba(110, 231, 160, 0.07);
+  text-align: left;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) th p,
+:is(.twig-node__text, .twig-node__prosemirror) td p {
+  margin: 0;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) .tableWrapper {
+  overflow: hidden;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) ul.contains-task-list,
+:is(.twig-node__text, .twig-node__prosemirror) ul[data-type='taskList'] {
+  padding-left: 0;
+  list-style: none;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) li.task-list-item,
+:is(.twig-node__text, .twig-node__prosemirror) li[data-type='taskItem'] {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  list-style: none;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) li[data-type='taskItem'] > label {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) li[data-type='taskItem'] > div {
+  flex: 1;
+  min-width: 0;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) li[data-type='taskItem'] > label > span {
+  display: none;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) input[type='checkbox'] {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) li.task-list-item input[type='checkbox'] {
+  margin: 4px 4px 0 0;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) img {
+  display: block;
+  max-width: 100%;
+  max-height: 72px;
+  height: auto;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+:is(.twig-node__text, .twig-node__prosemirror) hr {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border-strong);
 }
 
 .twig-node__text a {

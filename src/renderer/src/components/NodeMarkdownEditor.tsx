@@ -12,10 +12,10 @@ interface NodeMarkdownEditorProps {
 /**
  * WYSIWYG Markdown editor mounted only while a node is in INSERT mode.
  *
- * Enter finishes editing (Shift+Enter inserts a hard break), Escape cancels,
- * and Tab inserts two spaces like the old textarea. Everything else is
- * ProseMirror/Tiptap, so Markdown input rules and Mod+b/i/e/⇧x work while the
- * stored value is serialized back to Markdown on every change.
+ * Enter inserts a new paragraph (Shift+Enter inserts a hard break), Escape
+ * finishes, and Tab inserts two spaces like the old textarea. Everything else
+ * is ProseMirror/Tiptap, so Markdown input rules and Mod+b/i/e/⇧x work while
+ * the stored value is serialized back to Markdown on every change.
  */
 export function NodeMarkdownEditor({ text, onChange, onDone }: NodeMarkdownEditorProps): React.JSX.Element {
   const onChangeRef = useRef(onChange)
@@ -44,13 +44,6 @@ export function NodeMarkdownEditor({ text, onChange, onDone }: NodeMarkdownEdito
           return true
         }
 
-        if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault()
-          event.stopPropagation()
-          onDoneRef.current()
-          return true
-        }
-
         if (event.key === 'Tab') {
           event.preventDefault()
           event.stopPropagation()
@@ -62,7 +55,9 @@ export function NodeMarkdownEditor({ text, onChange, onDone }: NodeMarkdownEdito
       }
     },
     onUpdate: ({ editor: current }) => {
-      onChangeRef.current(current.getMarkdown())
+      // Table/list serializers can add surrounding blank lines. Node text is
+      // trimmed at the edges; internal blank lines are preserved.
+      onChangeRef.current(current.getMarkdown().replace(/^\n+|\n+$/g, ''))
     },
     onBlur: () => {
       onDoneRef.current()

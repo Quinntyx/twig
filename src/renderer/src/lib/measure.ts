@@ -21,6 +21,22 @@ export const NODE_MAX_TEXT_WIDTH = 240
 export const NODE_MIN_WIDTH = 64
 export const PLACEHOLDER_TEXT = 'New idea'
 
+/** Font scale for h1..h6; mirrors the heading sizes in styles.css. */
+export const NODE_HEADING_SCALES = [1.36, 1.22, 1.11, 1, 1, 1] as const
+
+const LIST_INDENT = 16
+const QUOTE_INDENT = 10
+const CODE_INDENT = 16
+const CODE_SCALE = 0.86
+const CODE_LINE_HEIGHT = 18
+const CODE_PADDING = 12
+const TASK_CHECKBOX = 14
+const TABLE_SCALE = 0.86
+const TABLE_LINE_HEIGHT = 20
+const TABLE_MIN_WIDTH = 200
+const IMAGE_HEIGHT = 72
+const IMAGE_MIN_WIDTH = 160
+
 const MAX_TEXT_WIDTH = NODE_MAX_TEXT_WIDTH
 const MIN_NODE_WIDTH = NODE_MIN_WIDTH
 
@@ -117,14 +133,197 @@ export function wrapText(text: string, maxWidth = MAX_TEXT_WIDTH): string[] {
   return lines.length > 0 ? lines : ['']
 }
 
+interface BlockLine {
+  text: string
+  scale: number
+  lineHeight: number
+  indent: number
+  extra: number
+  minWidth?: number
+}
+
+const FENCE = /^\s{0,3}(?:```|~~~)/
+const HEADING = /^\s{0,3}(#{1,6})\s+(.*)$/
+const LIST_ITEM = /^(\s*)(?:[-*+]|\d+[.)])\s+/
+const TASK_ITEM = /^(\s*)(?:[-*+]|\d+[.)])\s+\[[ xX]\]\s+/
+const QUOTE = /^(\s*(?:>\s?)+)/
+const RULE = /^\s{0,3}(?:[-*_])(?:\s*[-*_]){2,}\s*$/
+const IMAGE_LINE = /^\s*!\[[^\]]*\]\([^)]*\)\s*$/
+const TABLE_ROW = /^\s*\|.*\|\s*$/
+
+function rawCells(line: string): string[] {
+  return line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((cell) => cell.trim())
+}
+
+function tableCells(line: string): string[] {
+  return rawCells(line).map((cell) => markdownToPlainText(cell))
+}
+
+function isTableSeparator(line: string): boolean {
+  return rawCells(line).every((cell) => /^:?-+:?$/.test(cell))
+}
+
+/**
+ * Break Markdown into the visual lines a node renders, preserving the
+ * relative font scale and indentation of headings, lists, quotes and code.
+ * This is intentionally layout-only: it does not need to be a full parser.
+ */
+function blockLines(markdown: string): BlockLine[] {
+  const source = markdown.replace(/\r\n?/g, '\n').split('\n')
+  const lines: BlockLine[] = []
+  let inCode = false
+  let codeStarted = false
+
+  for (const raw of source) {
+    if (FENCE.test(raw)) {
+      inCode = !inCode
+      codeStarted = false
+      continue
+    }
+
+    if (inCode) {
+      lines.push({
+        // Code blocks preserve punctuation literally; only spaces are visible
+        // for wrapping purposes.
+        text: raw.replace(/\t/g, '  '),
+        scale: CODE_SCALE,
+        lineHeight: CODE_LINE_HEIGHT,
+        indent: CODE_INDENT,
+        extra: codeStarted ? 0 : CODE_PADDING
+      })
+      codeStarted = true
+      continue
+    }
+
+    const heading = HEADING.exec(raw)
+    if (heading) {
+      const level = (heading[1] ?? '').length
+      const scale = NODE_HEADING_SCALES[level - 1] ?? 1
+      lines.push({
+        text: markdownToPlainText(heading[2] ?? ''),
+        scale,
+        lineHeight: NODE_LINE_HEIGHT * scale,
+        indent: 0,
+        extra: 0
+      })
+      continue
+    }
+
+    if (IMAGE_LINE.test(raw)) {
+      lines.push({
+        text: '',
+        scale: 1,
+        lineHeight: 0,
+        indent: 0,
+        extra: IMAGE_HEIGHT,
+        minWidth: IMAGE_MIN_WIDTH
+      })
+      continue
+    }
+
+    if (TABLE_ROW.test(raw)) {
+      if (isTableSeparator(raw)) continue
+      const cells = tableCells(raw)
+      lines.push({
+        text: cells.join('  '),
+        scale: TABLE_SCALE,
+        lineHeight: TABLE_LINE_HEIGHT,
+        indent: 0,
+        extra: 0,
+        minWidth: Math.max(TABLE_MIN_WIDTH, cells.length * 70)
+      })
+      continue
+    }
+
+    const quote = QUOTE.exec(raw)
+    if (quote) {
+      const depth = ((quote[1] ?? '').match(/>/g) ?? []).length
+      lines.push({
+        text: markdownToPlainText(raw),
+        scale: 1,
+        lineHeight: NODE_LINE_HEIGHT,
+        indent: QUOTE_INDENT * Math.max(1, depth),
+        extra: 0
+      })
+      continue
+    }
+
+    const task = TASK_ITEM.exec(raw)
+    if (task) {
+      const depth = Math.floor((task[1] ?? '').length / 2)
+      lines.push({
+        text: markdownToPlainText(raw),
+        scale: 1,
+        lineHeight: NODE_LINE_HEIGHT,
+        indent: LIST_INDENT * (depth + 1) + TASK_CHECKBOX,
+        extra: 0
+      })
+      continue
+    }
+
+    const list = LIST_ITEM.exec(raw)
+    if (list) {
+      const depth = Math.floor((list[1] ?? '').length / 2)
+      lines.push({
+        text: markdownToPlainText(raw),
+        scale: 1,
+        lineHeight: NODE_LINE_HEIGHT,
+        indent: LIST_INDENT * (depth + 1),
+        extra: 0
+      })
+      continue
+    }
+
+    lines.push({
+      text: markdownToPlainText(raw),
+      scale: 1,
+      lineHeight: NODE_LINE_HEIGHT,
+      indent: 0,
+      // A horizontal rule is shorter than an empty text line.
+      extra: RULE.test(raw) ? -3 : 0
+    })
+  }
+
+  return lines
+}
+
 export function measureNodeText(text: string): { width: number; height: number; lines: string[] } {
-  const plain = markdownToPlainText(text)
-  const display = plain.length > 0 ? plain : PLACEHOLDER_TEXT
-  const lines = wrapText(display)
-  const widest = Math.max(0, ...lines.map((line) => textWidth(line)))
+  const buffer = blockLines(text)
+  const measured = buffer.length > 0 ? buffer : [{ text: '', scale: 1, lineHeight: NODE_LINE_HEIGHT, indent: 0, extra: 0 }]
+  const hasVisibleText = measured.some(
+    (line) => line.text.trim().length > 0 || line.extra !== 0 || line.minWidth !== undefined
+  )
+  const blocks = hasVisibleText
+    ? measured
+    : [{ text: PLACEHOLDER_TEXT, scale: 1, lineHeight: NODE_LINE_HEIGHT, indent: 0, extra: 0 }]
+
+  let height = 0
+  let widest = 0
+  const lines: string[] = []
+
+  for (const block of blocks) {
+    const maxWidth = Math.max(24, (MAX_TEXT_WIDTH - block.indent) / block.scale)
+    const wrapped = wrapText(block.text, maxWidth)
+    for (const line of wrapped) {
+      lines.push(line)
+      height += block.lineHeight
+      widest = Math.max(
+        widest,
+        block.minWidth ?? 0,
+        textWidth(line) * block.scale + block.indent
+      )
+    }
+    height += block.extra
+  }
+
   return {
     width: Math.min(MAX_TEXT_WIDTH, Math.ceil(widest) + 1),
-    height: Math.max(1, lines.length) * NODE_LINE_HEIGHT,
+    height: Math.max(1, height),
     lines
   }
 }

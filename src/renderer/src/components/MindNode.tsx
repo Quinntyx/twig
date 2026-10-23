@@ -12,7 +12,35 @@ import { NodeMarkdownEditor } from './NodeMarkdownEditor'
 export type TwigNodeData = { text: string; root: boolean }
 export type TwigFlowNode = Node<TwigNodeData, 'twig'>
 
-const MARKDOWN_ELEMENTS = ['p', 'strong', 'em', 'del', 'code', 'a', 'br']
+const MARKDOWN_ELEMENTS = [
+  'p',
+  'strong',
+  'em',
+  'del',
+  'code',
+  'a',
+  'br',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'pre',
+  'hr',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
+  'img',
+  'input'
+]
 
 /**
  * A single mind-map node. In NORMAL mode it renders Markdown; in INSERT mode
@@ -68,7 +96,9 @@ export function MindNode({ id, data }: NodeProps<TwigFlowNode>): React.JSX.Eleme
                   <a href={href} target="_blank" rel="noreferrer">
                     {children}
                   </a>
-                )
+                ),
+                img: ({ src, alt }) => <img src={src} alt={alt ?? ''} loading="lazy" />,
+                input: ({ checked }) => <input type="checkbox" checked={checked} disabled readOnly />
               }}
             >
               {data.text}

@@ -47,8 +47,36 @@ describe('text measurement', () => {
     expect(measureNodeText('[label](https://example.com)').lines).toEqual(['label'])
   })
 
-  it('sizes nodes with padding for all lines', () => {
-    const size = estimateNodeSize({ text: 'one\ntwo\nthree' })
+  it('scales headings and indents block content', () => {
+    const heading = measureNodeText('# Heading')
+    expect(heading.lines).toEqual(['Heading'])
+    expect(heading.height).toBeGreaterThan(NODE_LINE_HEIGHT)
+
+    const list = measureNodeText('- one\n- two')
+    expect(list.lines).toEqual(['one', 'two'])
+    expect(list.height).toBe(NODE_LINE_HEIGHT * 2)
+
+    const code = measureNodeText('```\ncode\n```')
+    expect(code.lines).toEqual(['code'])
+    expect(code.height).toBeGreaterThan(0)
+  })
+
+  it('measures task lists, tables, and images', () => {
+    const tasks = measureNodeText('- [ ] todo\n- [x] done')
+    expect(tasks.lines).toEqual(['todo', 'done'])
+    expect(tasks.height).toBe(NODE_LINE_HEIGHT * 2)
+
+    const table = measureNodeText('| a | b |\n| --- | --- |\n| 1 | 2 |')
+    expect(table.lines).toEqual(['a  b', '1  2'])
+    expect(table.height).toBe(40)
+    expect(table.width).toBeGreaterThanOrEqual(200)
+
+    const image = measureNodeText('![alt](https://example.com/x.png)')
+    expect(image.height).toBe(72)
+    expect(image.width).toBeGreaterThanOrEqual(160)
+  })
+
+  it('sizes nodes with padding for all lines', () => {    const size = estimateNodeSize({ text: 'one\ntwo\nthree' })
     expect(size.height).toBe(NODE_LINE_HEIGHT * 3 + 22)
     expect(size.width).toBeGreaterThanOrEqual(64)
 

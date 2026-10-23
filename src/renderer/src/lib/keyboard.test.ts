@@ -29,7 +29,7 @@ describe('keyToAction', () => {
   it('maps structure keys', () => {
     expect(keyToAction(key({ key: 'i' }))).toEqual({ type: 'edit' })
     expect(keyToAction(key({ key: 'o' }))).toEqual({ type: 'create', kind: 'sibling-after' })
-    expect(keyToAction(key({ key: 'x' }))).toEqual({ type: 'delete' })
+    expect(keyToAction(key({ key: 'd' }))).toEqual({ type: 'delete' })
     expect(keyToAction(key({ key: 'Delete' }))).toEqual({ type: 'delete' })
     expect(keyToAction(key({ key: 'Enter', shiftKey: true }))).toEqual({ type: 'create', kind: 'child' })
     expect(keyToAction(key({ key: 'H', shiftKey: true }))).toEqual({ type: 'create', kind: 'parent' })

@@ -56,7 +56,7 @@ export const DEFAULT_KEYBINDS: Keybinds = {
   createSiblingBefore: ['Shift+k'],
   createSiblingAfter: ['o', 'Shift+j'],
   edit: ['i'],
-  delete: ['x', 'Delete'],
+  delete: ['d', 'Delete'],
   undo: ['u', 'Ctrl+z'],
   redo: ['Ctrl+Shift+z', 'Ctrl+y'],
   toggleHelp: ['?'],

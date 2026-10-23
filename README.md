@@ -29,15 +29,15 @@ bun run dist         # packaged installers via electron-builder
 | --- | --- |
 | `h` `j` `k` `l` / arrows | Focus parent, next sibling, previous sibling, most recently visited child |
 | `i` | Edit the focused node |
-| `Enter` | Finish editing (`⇧Enter` inserts a line break) |
+| `Enter` | Insert a new paragraph while editing |
+| `⇧Enter` | Insert a line break while editing; new child in normal mode |
 | `o` | New sibling below |
-| `⇧Enter` | New child |
 | `⇧h` | New parent: wrap the focused node in a new one |
-| `x` / `Del` | Delete the node and its subtree |
+| `d` / `Del` | Delete the node and its subtree |
 | `u` | Undo (`Ctrl⇧z` / `Ctrl y` to redo) |
 | `Ctrl n` / `Ctrl o` / `Ctrl s` / `Ctrl⇧s` | New / open / save / save as |
 | `?` | Shortcut reference |
-| `Esc` | Cancel editing, close help |
+| `Esc` | Finish editing, close help |
 
 Clicking focuses a node; double-clicking edits it. Moving left remembers which
 child you came from, so moving right returns there instead of jumping to the
@@ -52,10 +52,12 @@ WYSIWYG editor in place, so the formatting is visible while you type. The saved
 Inline formatting and links are supported through Markdown input rules:
 `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, and links. While
 editing, `Ctrl+b`, `Ctrl+i`, `Ctrl+Shift+x`, and `Ctrl+e` toggle the
-corresponding inline marks (Command on macOS). Block structures are
-intentionally disabled so Enter always means "finish editing"; node text stays
-a compact label. Layout estimates node size from the rendered plain text, not
-the Markdown punctuation.
+corresponding inline marks (Command on macOS). Headings, lists, task lists,
+block quotes, fenced code blocks, tables, images, and horizontal rules are
+supported too. `Enter` inserts a new paragraph, `Shift+Enter` inserts a line
+break, and `Esc` finishes editing. Layout measures the rendered block structure
+(heading scale, list indentation, task checkboxes, tables, code blocks, image
+height) so nodes size to their content.
 
 ## File format
 
@@ -179,4 +181,4 @@ xattr -dr com.apple.quarantine /Applications/Twig.app
 
 Version 0.1.0. The core loop (create, edit, restructure, undo, save/open) is
 implemented. Not yet present: drag-to-reparent, multi-select, notes/links,
-images, search, or collaborative editing.
+search, or collaborative editing.
