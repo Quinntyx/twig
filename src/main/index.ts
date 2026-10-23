@@ -147,7 +147,12 @@ function createWindow(): void {
     }
   })
 
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => {
+    if (!win.isDestroyed()) win.show()
+  })
+
+  const windowId = win.id
+  const contentsId = win.webContents.id
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url)
@@ -155,8 +160,11 @@ function createWindow(): void {
   })
 
   win.on('close', (event) => {
-    if (allowClose.has(win.id)) return
-    if (!dirtyByWindow.get(win.webContents.id)) return
+    // During SIGINT/quit the native window can already be gone; touching
+    // win.webContents here would throw "Object has been destroyed".
+    if (win.isDestroyed()) return
+    if (allowClose.has(windowId)) return
+    if (!dirtyByWindow.get(contentsId)) return
 
     const choice = dialog.showMessageBoxSync(win, {
       type: 'warning',
@@ -168,7 +176,7 @@ function createWindow(): void {
       detail: 'Closing now will discard them.'
     })
     if (choice === 0) {
-      allowClose.add(win.id)
+      allowClose.add(windowId)
       win.close()
     } else {
       event.preventDefault()
@@ -176,8 +184,10 @@ function createWindow(): void {
   })
 
   win.on('closed', () => {
-    dirtyByWindow.delete(win.webContents.id)
-    allowClose.delete(win.id)
+    // The window and its webContents are destroyed by now; use the ids
+    // captured while the window was alive.
+    dirtyByWindow.delete(contentsId)
+    allowClose.delete(windowId)
   })
 
   const devUrl = process.env['ELECTRON_RENDERER_URL']
