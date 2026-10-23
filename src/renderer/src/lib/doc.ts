@@ -2,8 +2,8 @@ import type { Direction, MindMapDoc, MindNode, NodeId } from '../../../shared/ty
 
 /**
  * Pure tree operations. Every mutation returns a new document; callers own
- * history and focus. The document is a strict tree: one root, no cycles, every
- * node reachable from the root.
+ * history and focus. A document is either empty (`rootId === null`) or a strict
+ * tree with one root, no cycles, and every node reachable from that root.
  */
 
 export type IdFactory = () => NodeId
@@ -35,7 +35,12 @@ export function cloneDoc(doc: MindMapDoc): MindMapDoc {
   return { version: 1, rootId: doc.rootId, nodes }
 }
 
-export function createDoc(text = 'Central idea', idFactory: IdFactory = randomId): MindMapDoc {
+/**
+ * An empty document when called without text. Passing text creates a root node
+ * directly (useful for tests and for callers that want a pre-filled map).
+ */
+export function createDoc(text?: string, idFactory: IdFactory = randomId): MindMapDoc {
+  if (text === undefined) return { version: 1, rootId: null, nodes: {} }
   const id = idFactory()
   return {
     version: 1,
@@ -44,6 +49,20 @@ export function createDoc(text = 'Central idea', idFactory: IdFactory = randomId
       [id]: { id, text, parentId: null, children: [] }
     }
   }
+}
+
+/** Create the root node for an empty document; a no-op when a root exists. */
+export function addRoot(
+  doc: MindMapDoc,
+  text = '',
+  idFactory: IdFactory = randomId
+): { doc: MindMapDoc; id: NodeId } {
+  if (doc.rootId !== null && doc.nodes[doc.rootId]) return { doc, id: doc.rootId }
+  const next = cloneDoc(doc)
+  const id = uniqueId(next.nodes, idFactory)
+  next.rootId = id
+  next.nodes[id] = { id, text, parentId: null, children: [] }
+  return { doc: next, id }
 }
 
 export function countNodes(doc: MindMapDoc): number {
@@ -65,10 +84,12 @@ function replaceChild(doc: MindMapDoc, parentId: NodeId, oldChild: NodeId, newCh
 /** Append a child node to `parentId`. */
 export function addChild(
   doc: MindMapDoc,
-  parentId: NodeId,
+  parentId: NodeId | null,
   text = '',
   idFactory: IdFactory = randomId
 ): { doc: MindMapDoc; id: NodeId } {
+  if (doc.rootId === null) return addRoot(doc, text, idFactory)
+  if (parentId === null) return { doc, id: doc.rootId }
   const parent = doc.nodes[parentId]
   if (!parent) return { doc, id: parentId }
 
@@ -82,11 +103,13 @@ export function addChild(
 /** Insert a sibling next to `siblingId`. Roots have no siblings, so this is a no-op there. */
 export function addSibling(
   doc: MindMapDoc,
-  siblingId: NodeId,
+  siblingId: NodeId | null,
   position: 'before' | 'after',
   text = '',
   idFactory: IdFactory = randomId
 ): { doc: MindMapDoc; id: NodeId } {
+  if (doc.rootId === null) return addRoot(doc, text, idFactory)
+  if (siblingId === null) return { doc, id: doc.rootId }
   const sibling = doc.nodes[siblingId]
   if (!sibling || sibling.parentId === null) return { doc, id: siblingId }
 
@@ -108,10 +131,12 @@ export function addSibling(
  */
 export function insertParent(
   doc: MindMapDoc,
-  nodeId: NodeId,
+  nodeId: NodeId | null,
   text = '',
   idFactory: IdFactory = randomId
 ): { doc: MindMapDoc; id: NodeId } {
+  if (doc.rootId === null) return addRoot(doc, text, idFactory)
+  if (nodeId === null) return { doc, id: doc.rootId }
   const node = doc.nodes[nodeId]
   if (!node) return { doc, id: nodeId }
 
@@ -142,11 +167,23 @@ export function setText(doc: MindMapDoc, id: NodeId, text: string): MindMapDoc {
 
 /**
  * Remove a node and its whole subtree. Focus lands on the previous sibling,
- * else the next sibling, else the parent. Removing the root is a no-op.
+ * else the next sibling, else the parent. Removing the root clears the document
+ * and leaves no focus.
  */
-export function deleteSubtree(doc: MindMapDoc, id: NodeId): { doc: MindMapDoc; focusId: NodeId } {
+export function deleteSubtree(
+  doc: MindMapDoc,
+  id: NodeId | null
+): { doc: MindMapDoc; focusId: NodeId | null } {
+  if (id === null) return { doc, focusId: doc.rootId }
   const node = doc.nodes[id]
-  if (!node || node.parentId === null) return { doc, focusId: node ? id : doc.rootId }
+  if (!node) return { doc, focusId: doc.rootId }
+  if (id === doc.rootId) {
+    const next = cloneDoc(doc)
+    next.nodes = {}
+    next.rootId = null
+    return { doc: next, focusId: null }
+  }
+  if (node.parentId === null) return { doc, focusId: id }
 
   const siblings = siblingsOf(doc, id)
   const index = siblings.indexOf(id)
@@ -169,10 +206,11 @@ export function deleteSubtree(doc: MindMapDoc, id: NodeId): { doc: MindMapDoc; f
 /** Move focus in a tree. Stays put when there is no node in that direction. */
 export function focusMove(
   doc: MindMapDoc,
-  id: NodeId,
+  id: NodeId | null,
   direction: Direction,
   lastChildByParent: Record<NodeId, NodeId> = {}
-): NodeId {
+): NodeId | null {
+  if (id === null) return doc.rootId
   const node = doc.nodes[id]
   if (!node) return doc.rootId
   switch (direction) {
@@ -202,6 +240,7 @@ export function focusMove(
 /** Depth-first ids from the root, in child order. */
 export function walkDoc(doc: MindMapDoc): NodeId[] {
   const result: NodeId[] = []
+  if (doc.rootId === null) return result
   const stack = [doc.rootId]
   while (stack.length > 0) {
     const id = stack.pop()!

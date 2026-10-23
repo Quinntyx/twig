@@ -11,6 +11,8 @@ import { walkDoc } from './doc'
  *   "nodes": [{ "id": "n1", "text": "Central idea", "children": ["n2"] }]
  * }
  *
+ * An empty map is `{ ..., "rootId": null, "nodes": [] }`.
+ *
  * Parent links are derived from `children` on load, so files stay compact and
  * readable. The loader is strict: a malformed or non-tree file is rejected with
  * a user-facing message instead of producing a corrupt canvas.
@@ -29,7 +31,7 @@ export interface SerializedNode {
 export interface SerializedDoc {
   format: typeof FILE_FORMAT
   version: typeof FILE_VERSION
-  rootId: NodeId
+  rootId: NodeId | null
   nodes: SerializedNode[]
 }
 
@@ -75,7 +77,16 @@ export function parseDoc(raw: string): MindMapDoc {
   if (value.version !== FILE_VERSION) {
     throw new FlowFileError(`Unsupported mind map version: ${String(value.version)}.`)
   }
-  if (typeof value.rootId !== 'string' || value.rootId.length === 0) {
+  if (typeof value.rootId !== 'string' && value.rootId !== null) {
+    throw new FlowFileError('The mind map is missing its root node.')
+  }
+  if (value.rootId === null) {
+    if (!Array.isArray(value.nodes) || value.nodes.length > 0) {
+      throw new FlowFileError('The mind map has nodes but no root node.')
+    }
+    return { version: 1, rootId: null, nodes: {} }
+  }
+  if (value.rootId.length === 0) {
     throw new FlowFileError('The mind map is missing its root node.')
   }
   if (!Array.isArray(value.nodes) || value.nodes.length === 0) {

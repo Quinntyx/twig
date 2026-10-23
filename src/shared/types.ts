@@ -11,7 +11,8 @@ export interface MindNode {
 
 export interface MindMapDoc {
   version: 1
-  rootId: NodeId
+  /** Null when the document has no nodes yet. */
+  rootId: NodeId | null
   nodes: Record<NodeId, MindNode>
 }
 

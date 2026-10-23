@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   addChild,
+  addRoot,
   addSibling,
   cloneDoc,
   countNodes,
@@ -37,11 +38,42 @@ function tree(): MindMapDoc {
 }
 
 describe('createDoc', () => {
+  it('creates an empty document without text', () => {
+    const doc = createDoc()
+    expect(doc.rootId).toBeNull()
+    expect(doc.nodes).toEqual({})
+    expect(countNodes(doc)).toBe(0)
+  })
+
   it('creates a single root with the given text', () => {
     const doc = createDoc('Ideas', sequence('root'))
     expect(doc.rootId).toBe('root')
     expect(doc.nodes.root).toEqual({ id: 'root', text: 'Ideas', parentId: null, children: [] })
     expect(countNodes(doc)).toBe(1)
+  })
+})
+
+describe('addRoot', () => {
+  it('creates the first root on every add operation', () => {
+    const empty = createDoc()
+    const root = addRoot(empty, 'Root', sequence('r'))
+    expect(root.doc.rootId).toBe('r')
+    expect(root.doc.nodes.r?.parentId).toBeNull()
+
+    const child = addChild(empty, null, 'Root', sequence('r'))
+    expect(child.id).toBe('r')
+    expect(child.doc.nodes.r?.text).toBe('Root')
+
+    const sibling = addSibling(empty, null, 'after', 'Root', sequence('r'))
+    expect(sibling.id).toBe('r')
+
+    const parent = insertParent(empty, null, 'Root', sequence('r'))
+    expect(parent.id).toBe('r')
+  })
+
+  it('does not replace an existing root', () => {
+    const doc = createDoc('Root', sequence('r'))
+    expect(addRoot(doc, 'Other', sequence('x')).doc).toBe(doc)
   })
 })
 
@@ -120,11 +152,12 @@ describe('deleteSubtree', () => {
     expect(deleteSubtree(only, 'c').focusId).toBe('r')
   })
 
-  it('never deletes the root', () => {
+  it('deletes the root and the whole tree', () => {
     const doc = tree()
     const result = deleteSubtree(doc, 'r')
-    expect(result.doc).toBe(doc)
-    expect(result.focusId).toBe('r')
+    expect(result.doc.rootId).toBeNull()
+    expect(result.doc.nodes).toEqual({})
+    expect(result.focusId).toBeNull()
   })
 })
 
@@ -138,6 +171,12 @@ describe('focusMove', () => {
     expect(focusMove(doc, 'c', 'down')).toBe('c')
     expect(focusMove(doc, 'r', 'up')).toBe('r')
     expect(focusMove(doc, 'r', 'left')).toBe('r')
+  })
+
+  it('returns no focus in an empty document', () => {
+    const doc = createDoc()
+    expect(focusMove(doc, null, 'right')).toBeNull()
+    expect(walkDoc(doc)).toEqual([])
   })
 
   it('returns to the remembered child when moving right', () => {

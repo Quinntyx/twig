@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 import { Editor } from '@tiptap/core'
-import { markdownEditorExtensions } from './markdownEditor'
+import { markdownEditorContent, markdownEditorExtensions } from './markdownEditor'
 
 let editor: Editor | null = null
 
 function create(markdown: string): Editor {
   editor = new Editor({
     extensions: markdownEditorExtensions(),
-    content: markdown,
+    content: markdownEditorContent(markdown),
     contentType: 'markdown'
   })
   return editor

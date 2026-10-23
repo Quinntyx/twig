@@ -2,8 +2,46 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createDoc } from './lib/doc'
 import { useMindStore } from './store'
 
+function focusedId(): string {
+  const id = useMindStore.getState().focusedId
+  if (id === null) throw new Error('expected a focused node')
+  return id
+}
+
 beforeEach(() => {
-  useMindStore.getState().loadDoc(createDoc(), null)
+  useMindStore.getState().loadDoc(createDoc('Root'), null)
+})
+
+describe('empty documents', () => {
+  it('starts with no root and creates one on the first add operation', () => {
+    useMindStore.getState().loadDoc(createDoc(), null)
+    expect(useMindStore.getState().doc.rootId).toBeNull()
+    expect(useMindStore.getState().focusedId).toBeNull()
+
+    useMindStore.getState().createNode('child')
+    const state = useMindStore.getState()
+    expect(state.doc.rootId).not.toBeNull()
+    expect(state.focusedId).toBe(state.doc.rootId)
+    expect(Object.keys(state.doc.nodes)).toHaveLength(1)
+    expect(state.editingId).toBeNull()
+  })
+
+  it('allows deleting the root, leaving an empty document', () => {
+    useMindStore.getState().deleteFocused()
+    const state = useMindStore.getState()
+    expect(state.doc.rootId).toBeNull()
+    expect(state.doc.nodes).toEqual({})
+    expect(state.focusedId).toBeNull()
+    expect(state.toast).toBeNull()
+  })
+
+  it('undoes a root deletion', () => {
+    useMindStore.getState().deleteFocused()
+    useMindStore.getState().undo()
+    const state = useMindStore.getState()
+    expect(state.doc.rootId).not.toBeNull()
+    expect(state.focusedId).toBe(state.doc.rootId)
+  })
 })
 
 describe('mode preservation', () => {
@@ -15,20 +53,20 @@ describe('mode preservation', () => {
   })
 
   it('stays in insert mode when a node is created', () => {
-    const rootId = useMindStore.getState().focusedId
+    const rootId = focusedId()
     useMindStore.getState().startEditing()
     useMindStore.getState().updateText(rootId, 'edited root')
     useMindStore.getState().createNode('child')
 
     const state = useMindStore.getState()
     expect(state.editingId).toBe(state.focusedId)
-    expect(state.doc.nodes[state.focusedId]?.text).toBe('')
+    expect(state.doc.nodes[focusedId()]?.text).toBe('')
     expect(state.doc.nodes[rootId]?.text).toBe('edited root')
   })
 
   it('stays in normal mode when a node is deleted', () => {
     useMindStore.getState().createNode('child')
-    const childId = useMindStore.getState().focusedId
+    const childId = focusedId()
     useMindStore.getState().deleteFocused()
 
     const state = useMindStore.getState()
@@ -38,7 +76,7 @@ describe('mode preservation', () => {
 
   it('stays in insert mode when a node is deleted', () => {
     useMindStore.getState().createNode('child')
-    const childId = useMindStore.getState().focusedId
+    const childId = focusedId()
     useMindStore.getState().startEditing(childId)
     useMindStore.getState().deleteFocused()
 
@@ -51,15 +89,15 @@ describe('mode preservation', () => {
 
 describe('child focus memory', () => {
   it('returns to the child that was focused most recently', () => {
-    const rootId = useMindStore.getState().focusedId
+    const rootId = focusedId()
     useMindStore.getState().createNode('child')
-    const first = useMindStore.getState().focusedId
+    const first = focusedId()
     useMindStore.getState().focusNode(rootId)
     useMindStore.getState().createNode('child')
-    const second = useMindStore.getState().focusedId
+    const second = focusedId()
     useMindStore.getState().focusNode(rootId)
     useMindStore.getState().createNode('child')
-    const third = useMindStore.getState().focusedId
+    const third = focusedId()
 
     useMindStore.getState().focusNode(second)
     useMindStore.getState().moveFocus('left')
@@ -76,12 +114,12 @@ describe('child focus memory', () => {
   })
 
   it('falls back to the first child when the remembered child is gone', () => {
-    const rootId = useMindStore.getState().focusedId
+    const rootId = focusedId()
     useMindStore.getState().createNode('child')
-    const first = useMindStore.getState().focusedId
+    const first = focusedId()
     useMindStore.getState().focusNode(rootId)
     useMindStore.getState().createNode('child')
-    const doomed = useMindStore.getState().focusedId
+    const doomed = focusedId()
 
     useMindStore.getState().focusNode(doomed)
     useMindStore.getState().deleteFocused()

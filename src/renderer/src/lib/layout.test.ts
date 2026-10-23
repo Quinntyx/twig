@@ -82,7 +82,7 @@ describe('layoutTree', () => {
   })
 
   it('returns usable bounds for an empty document', () => {
-    const doc: MindMapDoc = { version: 1, rootId: 'missing', nodes: {} }
+    const doc: MindMapDoc = { version: 1, rootId: null, nodes: {} }
     const layout = layoutTree(doc)
     expect(layout.nodes).toEqual([])
     expect(layout.bounds).toEqual({ minX: 0, minY: 0, maxX: 0, maxY: 0 })

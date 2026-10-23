@@ -16,8 +16,18 @@ import { PLACEHOLDER_TEXT } from './measure'
  * tables, and images, so existing Markdown is never discarded on edit. Enter
  * inserts a new paragraph; Escape finishes editing.
  */
-export function markdownEditorExtensions(): AnyExtension[] {
-  return [
+/**
+ * Tiptap treats an empty string as "no content" and then tries to parse it as
+ * HTML, which needs a DOM. Use an explicit empty paragraph instead so a blank
+ * mind-map node can be edited in tests and non-DOM contexts too.
+ */
+export function markdownEditorContent(
+  text: string
+): string | { type: 'doc'; content: Array<{ type: 'paragraph' }> } {
+  return text.length > 0 ? text : { type: 'doc', content: [{ type: 'paragraph' }] }
+}
+
+export function markdownEditorExtensions(): AnyExtension[] {  return [
     StarterKit.configure({
       trailingNode: false,
       underline: false,

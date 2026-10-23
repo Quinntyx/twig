@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { markdownEditorExtensions } from '../lib/markdownEditor'
+import { markdownEditorContent, markdownEditorExtensions } from '../lib/markdownEditor'
 
 interface NodeMarkdownEditorProps {
   text: string
@@ -26,7 +26,7 @@ export function NodeMarkdownEditor({ text, onChange, onDone }: NodeMarkdownEdito
 
   const editor = useEditor({
     extensions: markdownEditorExtensions(),
-    content: text,
+    content: markdownEditorContent(text),
     contentType: 'markdown',
     autofocus: 'end',
     editorProps: {

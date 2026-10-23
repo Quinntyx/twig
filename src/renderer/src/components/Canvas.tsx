@@ -70,6 +70,7 @@ function CanvasInner(): React.JSX.Element {
   // Keep the focused node in view as focus moves (keyboard navigation, undo,
   // creating nodes). Panning only follows focus, never per-keystroke layout.
   useEffect(() => {
+    if (focusedId === null) return
     const node = layoutRef.current.byId[focusedId]
     if (!node) return
     void setCenter(node.x + node.width / 2, node.y + node.height / 2, {
@@ -81,6 +82,7 @@ function CanvasInner(): React.JSX.Element {
   // New/open documents start with a fitted view.
   const rootId = doc.rootId
   useEffect(() => {
+    if (rootId === null) return
     const timer = window.setTimeout(() => {
       void fitView({ padding: 0.25, duration: 220, maxZoom: 1.1 })
     }, 40)
@@ -117,6 +119,11 @@ function CanvasInner(): React.JSX.Element {
         <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="#242b35" />
         <Controls showInteractive={false} position="bottom-right" />
       </ReactFlow>
+      {nodes.length === 0 ? (
+        <div className="canvas__empty">
+          No nodes yet. Press a creation key to add the first node.
+        </div>
+      ) : null}
     </div>
   )
 }

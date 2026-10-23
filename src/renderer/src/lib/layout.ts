@@ -109,7 +109,7 @@ export function layoutTree(doc: MindMapDoc, options: LayoutOptions = {}): Layout
     }
   }
 
-  if (doc.nodes[doc.rootId]) place(doc.rootId, 0, 0)
+  if (doc.rootId !== null && doc.nodes[doc.rootId]) place(doc.rootId, 0, 0)
 
   const edges: LayoutEdge[] = []
   for (const node of Object.values(doc.nodes)) {

@@ -6,6 +6,9 @@ Twig is a tree on a canvas: type an idea, fan it out with `o`, wrap it with
 `⇧h`, navigate with `hjkl`. Everything is one keystroke away, and the map is
 saved as a readable `.twig.json` file you can diff, grep, and keep forever.
 
+A new map starts empty. The first creation key makes the root node, and if you
+delete the root the next creation key starts a new tree.
+
 ## Quick start
 
 ```bash
@@ -76,6 +79,7 @@ Files are UTF-8 JSON with a `.twig.json` suffix:
 ```
 
 Parent links are derived from `children`, so files stay compact and readable.
+An empty map is `{ "format": "twig", "version": 1, "rootId": null, "nodes": [] }`.
 Loading is strict: malformed files, duplicate ids, multiple parents, cycles and
 unreachable nodes are rejected with a message instead of rendering a corrupt map.
 
@@ -94,11 +98,12 @@ src/
       store.ts     Zustand store: document, focus, edit mode, undo/redo
 ```
 
-The document is an immutable tree (`MindMapDoc`). Every structural edit returns
-a new tree; the store keeps a bounded undo/redo stack and pushes a snapshot once
-per edit session rather than per keystroke. Layout is a pure function of the
-document: columns per depth, subtree extents for vertical packing, and node
-sizes estimated from a glyph-width table so tests run without a DOM.
+The document is an immutable tree (`MindMapDoc`), or empty with no root. Every
+structural edit returns a new tree; the store keeps a bounded undo/redo stack
+and pushes a snapshot once per edit session rather than per keystroke. Deleting
+the root clears the document. Layout is a pure function of the document:
+columns per depth, subtree extents for vertical packing, and node sizes
+estimated from a glyph-width table so tests run without a DOM.
 
 React Flow renders the tree; nodes are deliberately non-draggable — the layout
 owns positions. Focus is application state, not React Flow selection, so

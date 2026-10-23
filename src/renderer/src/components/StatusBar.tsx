@@ -8,7 +8,7 @@ export function StatusBar(): React.JSX.Element {
   const keybinds = useMindStore((state) => state.keybinds)
   const nodeCount = useMindStore((state) => countNodes(state.doc))
   const focusedText = useMindStore((state) => {
-    const node = state.doc.nodes[state.focusedId]
+    const node = state.focusedId === null ? undefined : state.doc.nodes[state.focusedId]
     return node ? markdownToPlainText(node.text).replace(/\s+/g, ' ').trim() : ''
   })
 

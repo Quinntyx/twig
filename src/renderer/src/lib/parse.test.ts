@@ -37,6 +37,14 @@ describe('save/load round trip', () => {
     expect(value.version).toBe(1)
     expect(value.nodes.map((node: { id: string }) => node.id)).toEqual(['r', 'a', 'n', 'b'])
   })
+
+  it('round-trips an empty map', () => {
+    const empty = createDoc()
+    const raw = serializeDoc(empty)
+    expect(JSON.parse(raw).rootId).toBeNull()
+    expect(parseDoc(raw)).toEqual(empty)
+    expect(parseDoc(file([], { rootId: null }))).toEqual(empty)
+  })
 })
 
 describe('validation', () => {
@@ -49,6 +57,10 @@ describe('validation', () => {
 
   it('rejects malformed nodes', () => {
     expect(() => parseDoc(file([]))).toThrow(/no nodes/)
+    expect(() => parseDoc(file([], { rootId: null }))).not.toThrow()
+    expect(() => parseDoc(file([{ id: 'r', text: 'x', children: [] }], { rootId: null }))).toThrow(
+      /no root node/
+    )
     expect(() => parseDoc(file([{ id: 'r', text: 'x' }]))).toThrow(/invalid children list/)
     expect(() => parseDoc(file([{ id: 'r', text: 1, children: [] }]))).toThrow(/invalid text/)
     expect(() => parseDoc(file([{ id: '', text: 'x', children: [] }]))).toThrow(/invalid id/)

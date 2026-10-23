@@ -8,6 +8,7 @@ import {
 } from '../../shared/config'
 import {
   addChild,
+  addRoot,
   addSibling,
   createDoc,
   deleteSubtree,
@@ -29,17 +30,17 @@ const HISTORY_LIMIT = 100
 function rememberChild(
   lastChildByParent: Record<NodeId, NodeId>,
   doc: MindMapDoc,
-  id: NodeId
+  id: NodeId | null
 ): Record<NodeId, NodeId> {
-  const parentId = doc.nodes[id]?.parentId
-  if (!parentId) return lastChildByParent
+  const parentId = id === null ? undefined : doc.nodes[id]?.parentId
+  if (!parentId || !id) return lastChildByParent
   if (lastChildByParent[parentId] === id) return lastChildByParent
   return { ...lastChildByParent, [parentId]: id }
 }
 
 export interface MindMapState {
   doc: MindMapDoc
-  focusedId: NodeId
+  focusedId: NodeId | null
   editingId: NodeId | null
   filePath: string | null
   dirty: boolean
@@ -54,7 +55,7 @@ export interface MindMapState {
   /** Document as it was when the current insert session started. */
   editBaseline: MindMapDoc | null
 
-  commitDoc(next: MindMapDoc, focusId?: NodeId, edit?: boolean): void
+  commitDoc(next: MindMapDoc, focusId?: NodeId | null, edit?: boolean): void
   focusNode(id: NodeId): void
   moveFocus(direction: Direction): void
   createNode(kind: CreateKind): void
@@ -92,16 +93,17 @@ export const useMindStore = create<MindMapState>((set, get) => ({
 
   commitDoc(next, focusId, edit = false) {
     set((state) => {
-      const focus = focusId && next.nodes[focusId] ? focusId : state.focusedId
-      const focusExists = next.nodes[focus] !== undefined
+      const requested = focusId === undefined ? state.focusedId : focusId
+      const focusExists = requested !== null && next.nodes[requested] !== undefined
+      const focus = focusExists ? requested : next.rootId
       return {
         doc: next,
         past: [state.doc, ...state.past].slice(0, HISTORY_LIMIT),
         future: [],
-        focusedId: focusExists ? focus : next.rootId,
-        editingId: edit ? (focusExists ? focus : next.rootId) : null,
-        editBaseline: edit ? next : null,
-        lastChildByParent: rememberChild(state.lastChildByParent, next, focusExists ? focus : next.rootId),
+        focusedId: focus,
+        editingId: edit && focus !== null ? focus : null,
+        editBaseline: edit && focus !== null ? next : null,
+        lastChildByParent: rememberChild(state.lastChildByParent, next, focus),
         dirty: true
       }
     })
@@ -133,6 +135,12 @@ export const useMindStore = create<MindMapState>((set, get) => ({
     const { doc, focusedId, editingId } = get()
     const keepEditing = editingId !== null
 
+    if (doc.rootId === null) {
+      const result = addRoot(doc)
+      get().commitDoc(result.doc, result.id, false)
+      return
+    }
+
     if (kind === 'parent') {
       const result = insertParent(doc, focusedId)
       if (result.id !== focusedId) get().commitDoc(result.doc, result.id, keepEditing)
@@ -151,11 +159,8 @@ export const useMindStore = create<MindMapState>((set, get) => ({
 
   deleteFocused() {
     const { doc, focusedId, editingId } = get()
+    if (focusedId === null) return
     const keepEditing = editingId !== null
-    if (doc.rootId === focusedId) {
-      set({ toast: 'The root node cannot be deleted.' })
-      return
-    }
     const result = deleteSubtree(doc, focusedId)
     get().commitDoc(result.doc, result.focusId, keepEditing)
   },
@@ -163,7 +168,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
   startEditing(id) {
     const target = id ?? get().focusedId
     const { doc, lastChildByParent } = get()
-    if (!doc.nodes[target]) return
+    if (target === null || !doc.nodes[target]) return
     set({
       focusedId: target,
       editingId: target,
@@ -200,7 +205,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
     const { past, future, doc, focusedId } = get()
     const previous = past[0]
     if (!previous) return
-    const focus = previous.nodes[focusedId] ? focusedId : previous.rootId
+    const focus = focusedId !== null && previous.nodes[focusedId] ? focusedId : previous.rootId
     set((state) => ({
       doc: previous,
       past: past.slice(1),
@@ -218,7 +223,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
     const { past, future, doc, focusedId } = get()
     const next = future[0]
     if (!next) return
-    const focus = next.nodes[focusedId] ? focusedId : next.rootId
+    const focus = focusedId !== null && next.nodes[focusedId] ? focusedId : next.rootId
     set((state) => ({
       doc: next,
       past: [doc, ...past].slice(0, HISTORY_LIMIT),
