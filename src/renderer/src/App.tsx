@@ -27,6 +27,24 @@ export default function App(): React.JSX.Element {
 
   useEffect(() => {
     if (!window.twig) return
+    let cancelled = false
+    void window.twig
+      .getConfig()
+      .then((result) => {
+        if (cancelled) return
+        useMindStore.getState().setKeybinds(result.config.keybinds)
+        if (result.error) setToast(result.error)
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setToast(`Could not load config: ${String(error)}`)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [setToast])
+
+  useEffect(() => {
+    if (!window.twig) return
     return window.twig.onMenuAction((action) => {
       if (action === 'new') newFlowCommand()
       else if (action === 'open') void openFlowCommand()

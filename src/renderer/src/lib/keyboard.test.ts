@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_KEYBINDS, type Keybinds } from '../../../shared/config'
 import { keyToAction, type KeyLike } from './keyboard'
 
 function key(overrides: Partial<KeyLike>): KeyLike {
@@ -29,6 +30,19 @@ describe('keyToAction', () => {
     expect(keyToAction(key({ key: 'H', shiftKey: true }))).toEqual({ type: 'create', kind: 'parent' })
   })
 
+  it('creates nodes with the shifted movement keys', () => {
+    expect(keyToAction(key({ key: 'H', shiftKey: true }))).toEqual({ type: 'create', kind: 'parent' })
+    expect(keyToAction(key({ key: 'L', shiftKey: true }))).toEqual({ type: 'create', kind: 'child' })
+    expect(keyToAction(key({ key: 'J', shiftKey: true }))).toEqual({
+      type: 'create',
+      kind: 'sibling-after'
+    })
+    expect(keyToAction(key({ key: 'K', shiftKey: true }))).toEqual({
+      type: 'create',
+      kind: 'sibling-before'
+    })
+  })
+
   it('maps history, help and escape', () => {
     expect(keyToAction(key({ key: 'u' }))).toEqual({ type: 'undo' })
     expect(keyToAction(key({ key: '?' }))).toEqual({ type: 'toggle-help' })
@@ -53,5 +67,43 @@ describe('keyToAction', () => {
     expect(keyToAction(key({ key: 'h', altKey: true }))).toBeNull()
     expect(keyToAction(key({ key: 'Ctrl' }))).toBeNull()
     expect(keyToAction(key({ key: 'p', ctrlKey: true }))).toBeNull()
+  })
+
+  it('applies a Workman-style keymap', () => {
+    const workman: Keybinds = {
+      ...DEFAULT_KEYBINDS,
+      focusLeft: ['y', 'ArrowLeft'],
+      focusRight: ['o', 'ArrowRight'],
+      focusUp: ['e', 'ArrowUp'],
+      focusDown: ['n', 'ArrowDown'],
+      createParent: ['Shift+y'],
+      createChild: ['Shift+Enter', 'Shift+o'],
+      createSiblingBefore: ['Shift+e'],
+      createSiblingAfter: ['p', 'Shift+n']
+    }
+
+    expect(keyToAction(key({ key: 'y' }), workman)).toEqual({ type: 'focus', direction: 'left' })
+    expect(keyToAction(key({ key: 'o' }), workman)).toEqual({ type: 'focus', direction: 'right' })
+    expect(keyToAction(key({ key: 'e' }), workman)).toEqual({ type: 'focus', direction: 'up' })
+    expect(keyToAction(key({ key: 'n' }), workman)).toEqual({ type: 'focus', direction: 'down' })
+    expect(keyToAction(key({ key: 'Y', shiftKey: true }), workman)).toEqual({
+      type: 'create',
+      kind: 'parent'
+    })
+    expect(keyToAction(key({ key: 'O', shiftKey: true }), workman)).toEqual({
+      type: 'create',
+      kind: 'child'
+    })
+    expect(keyToAction(key({ key: 'N', shiftKey: true }), workman)).toEqual({
+      type: 'create',
+      kind: 'sibling-after'
+    })
+    expect(keyToAction(key({ key: 'E', shiftKey: true }), workman)).toEqual({
+      type: 'create',
+      kind: 'sibling-before'
+    })
+    expect(keyToAction(key({ key: 'p' }), workman)).toEqual({ type: 'create', kind: 'sibling-after' })
+    expect(keyToAction(key({ key: 'h' }), workman)).toBeNull()
+    expect(keyToAction(key({ key: 'H', shiftKey: true }), workman)).toBeNull()
   })
 })

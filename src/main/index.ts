@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { readFile, writeFile } from 'node:fs/promises'
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, type MenuItemConstructorOptions } from 'electron'
 import { IPC, type MenuAction, type OpenFlowResult, type SaveFlowResult } from '../shared/ipc'
+import { loadConfig } from './config'
 
 const dirtyByWindow = new Map<number, boolean>()
 const allowClose = new Set<number>()
@@ -184,15 +185,18 @@ function createWindow(): void {
   else void win.loadFile(join(__dirname, '../renderer/index.html'))
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   app.setName('Twig')
   app.setAppUserModelId('dev.quinntyx.twig')
+  const loadedConfig = await loadConfig()
+  if (loadedConfig.error) console.error(`[twig] ${loadedConfig.error}`)
   buildMenu()
 
   ipcMain.handle(IPC.open, (event) => handleOpen(event))
   ipcMain.handle(IPC.save, (event, content: string, filePath: string | null, forceDialog: boolean) =>
     handleSave(event, content, filePath, forceDialog)
   )
+  ipcMain.handle(IPC.config, () => loadedConfig)
   ipcMain.on(IPC.setDirty, (event, dirty: boolean) => {
     dirtyByWindow.set(event.sender.id, Boolean(dirty))
   })

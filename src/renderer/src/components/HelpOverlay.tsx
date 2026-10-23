@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { formatKeybinds, type KeybindAction } from '../../../shared/config'
 import { useMindStore } from '../store'
 
 interface Shortcut {
@@ -11,55 +12,59 @@ interface Section {
   shortcuts: Shortcut[]
 }
 
-const SECTIONS: Section[] = [
-  {
-    title: 'Navigate',
-    shortcuts: [
-      { keys: ['h', '←'], description: 'Focus the parent' },
-      { keys: ['l', '→'], description: 'Focus the first child' },
-      { keys: ['j', '↓'], description: 'Focus the next sibling' },
-      { keys: ['k', '↑'], description: 'Focus the previous sibling' }
-    ]
-  },
-  {
-    title: 'Edit',
-    shortcuts: [
-      { keys: ['i'], description: 'Edit the focused node' },
-      { keys: ['Enter'], description: 'Finish editing' },
-      { keys: ['⇧Enter'], description: 'New line while editing' },
-      { keys: ['Esc'], description: 'Cancel editing / close help' }
-    ]
-  },
-  {
-    title: 'Structure',
-    shortcuts: [
-      { keys: ['o'], description: 'New sibling below' },
-      { keys: ['⇧Enter'], description: 'New child' },
-      { keys: ['⇧h'], description: 'New parent (wraps this node)' },
-      { keys: ['x', 'Del'], description: 'Delete node and its subtree' }
-    ]
-  },
-  {
-    title: 'History',
-    shortcuts: [
-      { keys: ['u'], description: 'Undo' },
-      { keys: ['Ctrl⇧Z', 'Ctrl Y'], description: 'Redo' }
-    ]
-  },
-  {
-    title: 'File',
-    shortcuts: [
-      { keys: ['Ctrl N'], description: 'New map' },
-      { keys: ['Ctrl O'], description: 'Open…' },
-      { keys: ['Ctrl S'], description: 'Save' },
-      { keys: ['Ctrl⇧S'], description: 'Save as…' }
-    ]
-  }
-]
-
 export function HelpOverlay(): React.JSX.Element {
   const setHelpOpen = useMindStore((state) => state.setHelpOpen)
+  const keybinds = useMindStore((state) => state.keybinds)
   const dialogRef = useRef<HTMLDivElement>(null)
+
+  const keys = (action: KeybindAction): string[] => formatKeybinds(keybinds[action])
+
+  const sections: Section[] = [
+    {
+      title: 'Navigate',
+      shortcuts: [
+        { keys: keys('focusLeft'), description: 'Focus the parent' },
+        { keys: keys('focusRight'), description: 'Focus the first child' },
+        { keys: keys('focusDown'), description: 'Focus the next sibling' },
+        { keys: keys('focusUp'), description: 'Focus the previous sibling' }
+      ]
+    },
+    {
+      title: 'Edit',
+      shortcuts: [
+        { keys: keys('edit'), description: 'Edit the focused node' },
+        { keys: ['Enter'], description: 'Finish editing' },
+        { keys: ['⇧Enter'], description: 'New line while editing' },
+        { keys: ['Esc'], description: 'Cancel editing / close help' }
+      ]
+    },
+    {
+      title: 'Structure',
+      shortcuts: [
+        { keys: keys('createSiblingAfter'), description: 'New sibling below' },
+        { keys: keys('createSiblingBefore'), description: 'New sibling above' },
+        { keys: keys('createChild'), description: 'New child' },
+        { keys: keys('createParent'), description: 'New parent (wraps this node)' },
+        { keys: keys('delete'), description: 'Delete node and its subtree' }
+      ]
+    },
+    {
+      title: 'History',
+      shortcuts: [
+        { keys: keys('undo'), description: 'Undo' },
+        { keys: keys('redo'), description: 'Redo' }
+      ]
+    },
+    {
+      title: 'File',
+      shortcuts: [
+        { keys: keys('newMap'), description: 'New map' },
+        { keys: keys('openMap'), description: 'Open…' },
+        { keys: keys('saveMap'), description: 'Save' },
+        { keys: keys('saveMapAs'), description: 'Save as…' }
+      ]
+    }
+  ]
 
   useEffect(() => {
     dialogRef.current?.focus()
@@ -105,7 +110,7 @@ export function HelpOverlay(): React.JSX.Element {
         </div>
 
         <div className="help__grid">
-          {SECTIONS.map((section) => (
+          {sections.map((section) => (
             <section key={section.title} className="help__section">
               <h3 className="help__section-title">{section.title}</h3>
               <dl className="help__list">
@@ -125,7 +130,8 @@ export function HelpOverlay(): React.JSX.Element {
         </div>
 
         <p className="help__note">
-          Maps are saved as readable <code>.twig.json</code> files — diffable, portable, yours.
+          Keybindings live in <code>~/.config/twig/twig.json</code>. Maps are saved as readable{' '}
+          <code>.twig.json</code> files — diffable, portable, yours.
         </p>
       </div>
     </div>

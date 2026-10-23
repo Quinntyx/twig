@@ -1,8 +1,19 @@
 import { useEffect } from 'react'
 import type { Direction } from '../../../shared/types'
 import type { MenuAction } from '../../../shared/ipc'
+import {
+  DEFAULT_KEYBINDS,
+  KEYBIND_ACTIONS,
+  chordMatches,
+  parseChord,
+  type KeyLike,
+  type KeybindAction,
+  type Keybinds
+} from '../../../shared/config'
 import { useMindStore, type CreateKind } from '../store'
 import { newFlowCommand, openFlowCommand, saveFlowCommand } from './commands'
+
+export type { KeyLike }
 
 export type KeyAction =
   | { type: 'focus'; direction: Direction }
@@ -15,92 +26,47 @@ export type KeyAction =
   | { type: 'escape' }
   | { type: 'file'; command: MenuAction }
 
-export interface KeyLike {
-  key: string
-  shiftKey?: boolean
-  ctrlKey?: boolean
-  metaKey?: boolean
-  altKey?: boolean
+const KEY_ACTIONS: Record<KeybindAction, KeyAction> = {
+  focusLeft: { type: 'focus', direction: 'left' },
+  focusRight: { type: 'focus', direction: 'right' },
+  focusUp: { type: 'focus', direction: 'up' },
+  focusDown: { type: 'focus', direction: 'down' },
+  createParent: { type: 'create', kind: 'parent' },
+  createChild: { type: 'create', kind: 'child' },
+  createSiblingBefore: { type: 'create', kind: 'sibling-before' },
+  createSiblingAfter: { type: 'create', kind: 'sibling-after' },
+  edit: { type: 'edit' },
+  delete: { type: 'delete' },
+  undo: { type: 'undo' },
+  redo: { type: 'redo' },
+  toggleHelp: { type: 'toggle-help' },
+  newMap: { type: 'file', command: 'new' },
+  openMap: { type: 'file', command: 'open' },
+  saveMap: { type: 'file', command: 'save' },
+  saveMapAs: { type: 'file', command: 'save-as' }
 }
 
 /**
- * Map a keyboard event to an editor action. Pure, so the mapping can be
- * verified without a DOM.
+ * Map a keyboard event to an editor action using the user's config. Pure, so
+ * the mapping can be verified without a DOM. Escape is always reserved for
+ * leaving insert/cancel help, regardless of config.
  */
-export function keyToAction(event: KeyLike): KeyAction | null {
-  const key = event.key
-  const lower = key.length === 1 ? key.toLowerCase() : key
-  const mod = Boolean(event.ctrlKey || event.metaKey)
+export function keyToAction(event: KeyLike, keybinds: Keybinds = DEFAULT_KEYBINDS): KeyAction | null {
+  if (event.key === 'Escape') return { type: 'escape' }
 
-  if (mod) {
-    switch (lower) {
-      case 's':
-        return { type: 'file', command: event.shiftKey ? 'save-as' : 'save' }
-      case 'o':
-        return { type: 'file', command: 'open' }
-      case 'n':
-        return { type: 'file', command: 'new' }
-      case 'z':
-        return event.shiftKey ? { type: 'redo' } : { type: 'undo' }
-      case 'y':
-        return { type: 'redo' }
-      default:
-        return null
+  for (const action of KEYBIND_ACTIONS) {
+    const bindings = keybinds[action] ?? DEFAULT_KEYBINDS[action]
+    for (const spec of bindings) {
+      const chord = parseChord(spec)
+      if (chord && chordMatches(chord, event)) return KEY_ACTIONS[action]
     }
   }
-
-  if (event.altKey) return null
-  if (key === '?') return { type: 'toggle-help' }
-  if (key === 'Escape') return { type: 'escape' }
-
-  switch (key) {
-    case 'ArrowLeft':
-      return { type: 'focus', direction: 'left' }
-    case 'ArrowRight':
-      return { type: 'focus', direction: 'right' }
-    case 'ArrowUp':
-      return { type: 'focus', direction: 'up' }
-    case 'ArrowDown':
-      return { type: 'focus', direction: 'down' }
-    default:
-      break
-  }
-
-  switch (lower) {
-    case 'h':
-      return event.shiftKey
-        ? { type: 'create', kind: 'parent' }
-        : { type: 'focus', direction: 'left' }
-    case 'l':
-      return { type: 'focus', direction: 'right' }
-    case 'j':
-      return { type: 'focus', direction: 'down' }
-    case 'k':
-      return { type: 'focus', direction: 'up' }
-    case 'i':
-      return { type: 'edit' }
-    case 'o':
-      return { type: 'create', kind: 'sibling-after' }
-    case 'u':
-      return { type: 'undo' }
-    case 'x':
-      return { type: 'delete' }
-    default:
-      break
-  }
-
-  if (key === 'Delete') return { type: 'delete' }
-  if (key === 'Enter' && event.shiftKey) return { type: 'create', kind: 'child' }
   return null
 }
 
 export function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
-  return (
-    target.tagName === 'TEXTAREA' ||
-    target.tagName === 'INPUT' ||
-    target.isContentEditable
-  )
+  return target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.isContentEditable
 }
 
 export async function executeKeyAction(action: KeyAction): Promise<void> {
@@ -141,9 +107,11 @@ export async function executeKeyAction(action: KeyAction): Promise<void> {
 }
 
 export function useKeyboard(): void {
+  const keybinds = useMindStore((state) => state.keybinds)
+
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
-      const action = keyToAction(event)
+      const action = keyToAction(event, keybinds)
       if (!action) return
 
       const editable = isEditableTarget(event.target)
@@ -164,5 +132,5 @@ export function useKeyboard(): void {
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [])
+  }, [keybinds])
 }

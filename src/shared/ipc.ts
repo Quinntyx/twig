@@ -1,10 +1,13 @@
 /** IPC channel names and payload contracts for the Electron file layer. */
 
+import type { TwigConfig } from './config'
+
 export const IPC = {
   open: 'flow:open',
   save: 'flow:save',
   setDirty: 'app:set-dirty',
-  menuAction: 'app:menu-action'
+  menuAction: 'app:menu-action',
+  config: 'app:config'
 } as const
 
 export type MenuAction = 'new' | 'open' | 'save' | 'save-as'
@@ -22,10 +25,17 @@ export interface SaveFlowResult {
   error?: string
 }
 
+export interface ConfigResult {
+  config: TwigConfig
+  path: string
+  error?: string
+}
+
 export interface TwigBridge {
   isElectron: true
   openFlow(): Promise<OpenFlowResult>
   saveFlow(content: string, filePath: string | null, forceDialog: boolean): Promise<SaveFlowResult>
+  getConfig(): Promise<ConfigResult>
   setDirty(dirty: boolean): void
   onMenuAction(listener: (action: MenuAction) => void): () => void
 }

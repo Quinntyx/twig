@@ -88,6 +88,37 @@ keyboard navigation works while the canvas is not focused. In Electron, file
 operations go through IPC; in the browser preview they degrade to an `<input>`
 picker and a download.
 
+## Configuration
+
+Twig creates `~/.config/twig/twig.json` on first launch (or
+`$XDG_CONFIG_HOME/twig/twig.json`) with every configurable key binding. The
+file is plain JSON and is never rewritten once it exists; missing or malformed
+fields fall back to the built-in defaults in memory.
+
+```json
+{
+  "version": 1,
+  "keybinds": {
+    "focusLeft": ["y", "ArrowLeft"],
+    "focusRight": ["o", "ArrowRight"],
+    "focusUp": ["e", "ArrowUp"],
+    "focusDown": ["n", "ArrowDown"],
+    "createParent": ["Shift+y"],
+    "createChild": ["Shift+Enter", "Shift+o"],
+    "createSiblingBefore": ["Shift+e"],
+    "createSiblingAfter": ["p", "Shift+n"]
+  }
+}
+```
+
+Each action takes a string or an array of chords. The file written on first
+launch includes every action; the example above only shows the movement and
+creation keys with their Workman positions. Chords use `+` (`Shift+h`,
+`Ctrl+Shift+z`) and accept `Ctrl` (also Cmd on macOS), `Alt`, and `Shift`. The
+unshifted movement keys focus neighbours; the shifted versions create a node in
+that direction: `Shift+h`/`Shift+y` parent, `Shift+l`/`Shift+o` child,
+`Shift+j`/`Shift+n` sibling below, `Shift+k`/`Shift+e` sibling above.
+
 ## Building installers
 
 `bun run dist` builds a DMG on macOS. On Linux, electron-builder cannot create

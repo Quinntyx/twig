@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Direction, MindMapDoc, NodeId } from '../../shared/types'
+import { DEFAULT_KEYBINDS, type Keybinds } from '../../shared/config'
 import {
   addChild,
   addSibling,
@@ -23,6 +24,7 @@ export interface MindMapState {
   dirty: boolean
   helpOpen: boolean
   toast: string | null
+  keybinds: Keybinds
   past: MindMapDoc[]
   future: MindMapDoc[]
   /** Document as it was when the current insert session started. */
@@ -43,6 +45,7 @@ export interface MindMapState {
   markSaved(filePath: string): void
   setHelpOpen(open: boolean): void
   setToast(toast: string | null): void
+  setKeybinds(keybinds: Keybinds): void
 }
 
 const initialDoc = createDoc()
@@ -55,6 +58,7 @@ export const useMindStore = create<MindMapState>((set, get) => ({
   dirty: false,
   helpOpen: false,
   toast: null,
+  keybinds: DEFAULT_KEYBINDS,
   past: [],
   future: [],
   editBaseline: null,
@@ -219,5 +223,9 @@ export const useMindStore = create<MindMapState>((set, get) => ({
 
   setToast(toast) {
     set({ toast })
+  },
+
+  setKeybinds(keybinds) {
+    set({ keybinds })
   }
 }))
